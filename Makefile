@@ -50,7 +50,7 @@ bin/$(STATIC): $(BASE) $(SOURCE) ; $(info $(M) Building static $(PACKAGE)...)
 check-docker:
 	@docker version >/dev/null
 
-docker: check-docker static ; $(info $(M) Building container image...)
+docker: check-docker ; $(info $(M) Building container image...)
 	@docker build --tag $(PACKAGE) .
 
 test: docker ; $(info $(M) Building container image for testing...)
@@ -64,3 +64,8 @@ test: docker ; $(info $(M) Building container image for testing...)
 
 run: docker ; $(info $(M) Running $(PACKAGE)...)
 	@docker run -it --rm --volume /var/run/docker.sock:/var/run/docker.sock $(PACKAGE) --remove-volume --remove-network
+
+ssh-%: static ; $(info $(M) Running remotely on $*)
+	@scp bin/$(STATIC) $*:~/
+	@scp insulatr.yaml $*:~/
+	@ssh $* ./$(STATIC)
