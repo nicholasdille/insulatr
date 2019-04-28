@@ -74,7 +74,7 @@ The `settings` node defines global configuration options. It supports the follow
 - `shell` is an array specifying the shell to run commands under. It defaults to `[ "sh" ]` to support minimized distribution images.
 - `network_name` contains the name of the network to connect services as well as build steps with. It defaults to `mynetwork`.
 - `network_driver` specifies the network driver to use. It defaults to `bridge`.
-- `timeout` defines how long to wait (in seconds) for the whole build before failing. It defaults to `60`.
+- `timeout` defines how long to wait (in seconds) for the whole build before failing. It defaults to `3600`.
 
 To summarize, the default settings are:
 

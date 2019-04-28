@@ -62,7 +62,7 @@ func defaults() *Build {
 			VolumeDriver:     "local",
 			WorkingDirectory: "/src",
 			Shell:            []string{"sh"},
-			Timeout:          60,
+			Timeout:          60 * 60,
 			NetworkName:      "mynetwork",
 			NetworkDriver:    "bridge",
 		},
