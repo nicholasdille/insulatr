@@ -19,7 +19,22 @@ type argT struct {
 	Remove        bool   `cli:"remove"         usage:"Same as --remove-volume and --remove-network" dft:"false"`
 }
 
+var GitCommit string
+var BuildTime string
+var Version string
+
 func main() {
+        if len(GitCommit) == 0 {
+                GitCommit = "UNKNOWN"
+        }
+        if len(BuildTime) == 0 {
+                BuildTime = "UNKNOWN"
+        }
+        if len(Version) == 0 {
+                Version = "UNKNOWN"
+        }
+        fmt.Printf("Running insulatr version %s built at %s from %s\n", Version, BuildTime, GitCommit)
+
 	os.Exit(cli.Run(new(argT), func(ctx *cli.Context) error {
 		argv := ctx.Argv().(*argT)
 
