@@ -13,13 +13,17 @@ repos:
 services:
   - name: web
     image: nginx
+  - name: mysql
+    image: mysql
+    environment:
+      - MYSQL_RANDOM_ROOT_PASSWORD=yes
 
 steps:
 
   - name: test
     image: alpine
     environment:
-      TEST: foobar
+      - TEST=foobar
     commands:
       - pwd
       - ls -l
