@@ -1,6 +1,8 @@
 # insulatr
 
-`insulatr` is a tool for container native builds
+`insulatr` is a tool for container native builds.
+
+Based on a YAML file, `insulatr` isolates build steps in individual containers while results are transported using a Docker volume.
 
 ## Usage
 
@@ -12,7 +14,25 @@ insulatr --file insulatr.yaml
 
 XXX parameters
 
-XXX alias
+### Docker image
+
+The Docker image [`nicholasdille/insulatr`](https://cloud.docker.com/repository/docker/nicholasdille/insulatr) is [automatically built by Docker Hub](https://cloud.docker.com/repository/docker/nicholasdille/insulatr/builds). `insulatr` ships as a scratch image with only the statically linked binary.
+
+The following tags are currently supported:
+
+- [`latest` (Dockerfile#master)](https://github.com/nicholasdille/insulatr/blob/master/Dockerfile)
+
+New releases receive a git tag which triggers a separate build which produces a new image tagged with the versions.
+
+The Docker image is used in the following way:
+
+```bash
+docker run -it --volume $PWD:/insulatr --workdir /insulatr nicholasdille/insulatr [<parameters>]
+```
+
+### Alias
+
+If the Docker daemon is running on a remote host, the following alias will add the local `insulatr.yaml` to a new image and run it:
 
 ```bash
 alias insulatr="echo -e 'FROM nicholasdille/insulatr\nADD insulatr.yaml /' | docker image build --file - --tag insulatr:test --quiet . | xargs -r docker run -t -v /var/run/docker.sock:/var/run/docker.sock"
