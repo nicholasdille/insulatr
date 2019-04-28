@@ -6,11 +6,16 @@ Based on a YAML file, `insulatr` isolates build steps in individual containers w
 
 ## Table of contents
 
+1. [Why `insulatr`](#why-insulatr)
 1. [Usage](#usage)
 1. [Build definitions](#build-definitions)
 1. [Building](#building)
 1. [Design](#design)
 1. [Useful links](#useful-links)
+
+## Why `insulatr`
+
+XXX
 
 ## Usage
 
@@ -61,19 +66,85 @@ alias insulatr="echo -e 'FROM nicholasdille/insulatr\nADD insulatr.yaml /' | doc
 
 ### Settings
 
-XXX
+The `settings` node defines global configuration options. It supports the following (optional) fields:
+
+- `volume_name` contains the name of the volume transporting repository checkouts as well as builds results across the build steps. It defaults to `myvolume`.
+- `volume_driver` specifies the volume driver to use. It defaults to `local`.
+- `working_directory` contains the path under which to mount the volume. It defaults to `/src`.
+- `shell` is an array specifying the shell to run commands under. It defaults to `[ "sh" ]` to support minimized distribution images.
+- `network_name` contains the name of the network to connect services as well as build steps with. It defaults to `mynetwork`.
+- `network_driver` specifies the network driver to use. It defaults to `bridge`.
+- `timeout` defines how long to wait (in seconds) for the whole build before failing. It defaults to `60`.
+
+To summarize, the default settings are:
+
+```yaml
+settings:
+  volume_name: myvolume
+  volume_driver: local
+  working_directory: /src
+  shell: [ "sh" ]
+  network_name: mynetwork
+  network_driver: bridge
+  timeout: 60
+```
 
 ### Repositories
 
-XXX
+The `repos` node defines a list of Git repositories to checkout before executing build steps. Currently, only unauthorized repositories are supported. The following fields are supported per repository:
+
+- `name` (mandatory) contains the given name for a repository.
+- `location` (mandatory) contains the URL to the repository.
+- `directory` (optional) contains the directory to checkout into. If omitted, the checkout behaves as `git clone <url>` and creates a new directory with a name based on the repository name.
+- `shallow` (optional) specifies whether to create a shallow clone. It defaults to `false`.
+- `branch` (optional) specifies a branch to checkout.
+- `tag` (optional) specifies a tag to checkout.
+- `commit` (optional) specifies a commit to checkout.
+
+A typical repository definition looks like this:
+
+```yaml
+repos:
+  - name: main
+    location: https://github.com/nicholasdille/insulatr
+```
 
 ### Services
 
-XXX
+The `services` node defines a list of services required by the build steps. The are started in order before build steps are executed. The following fields are supported per service:
+
+- `name` (mandatory) contains the given name for a repository.
+- `image` (mandatory) specifies the image to run the services with.
+- `environment` (optional) defines the environment variables required to configure the service.
+
+A typical service definition looks like this:
+
+```yaml
+services:
+  - name: web
+    image: nginx
+```
 
 ### Build steps
 
-XXX
+The `steps` node defines a list of build steps to execute. XXX.
+
+- `name` (mandatory) contains the given name of a build step.
+- `image` (mandatory) specifies the image to run the step with.
+- `commands` (mandatory) is a list of commands to execute in the build step.
+- `user` (optional) is a user to execute the commands under.
+- `shell` (optional) overrides the [global `shell` setting](#settings).
+- `override_entrypoint` (optional) executes the shell as the entrypoint. It defaults to `false`.
+
+Typical build steps look like this:
+
+```yaml
+steps:
+  - name: build
+    image: alpine
+    commands:
+      - printenv
+```
 
 ### Example
 
@@ -130,7 +201,13 @@ steps:
 
 ## Building
 
-XXX
+The following commands build `insulatr` from source.
+
+1. Clone repository: `git clone https://github.com/nicholasdille/insulatr`
+1. Download dependencies: `make deps`
+1. Build static binary: `make static`
+
+The resulting binary is located in `bin/insulatr-x86_64`.
 
 ## Design
 
