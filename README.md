@@ -218,11 +218,15 @@ The resulting binary is located in `bin/insulatr-x86_64`.
 
 ## Design
 
-XXX
+This sections lists internals about `insulatr`.
 
-### Design decisions
+### Execution order
 
-XXX
+The order of the sections is:
+
+1. `services`
+1. `repos`
+1. `steps`
 
 ## Useful links
 
