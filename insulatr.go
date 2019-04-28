@@ -141,7 +141,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				&ctxTimeout,
 				cli,
 				service.Image,
-				[]string{},
+				service.Environment,
 				build.Settings.NetworkName,
 				service.Name,
 			)
