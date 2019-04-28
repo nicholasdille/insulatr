@@ -44,6 +44,7 @@ type Step struct {
 	OverrideEntrypoint bool     `yaml:"override_entrypoint"`
 	User               string   `yaml:"user"`
 	Commands           []string `yaml:"commands"`
+        Environment        []string `yaml:"environment"`
 }
 
 // Build is used to import from YaML
@@ -286,7 +287,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				step.Shell,
 				step.Commands,
 				step.User,
-				build.Environment,
+				step.Environment,
 				build.Settings.WorkingDirectory,
 				build.Settings.NetworkName,
 				build.Settings.VolumeName,
