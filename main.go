@@ -53,8 +53,6 @@ func main() {
 			os.Exit(1)
 		}
 
-		fmt.Printf("reuseVolume=%s,removeVolume=%s.\n", argv.ReuseVolume, argv.RemoveVolume)
-
 		err = run(build, argv.ReuseVolume, argv.RemoveVolume, argv.ReuseNetwork, argv.RemoveNetwork)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error building %s: %s\n", argv.File, err)
