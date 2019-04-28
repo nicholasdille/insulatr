@@ -1,16 +1,16 @@
 hash: 983aa930a311edcbefefc18f87b0a2d84346eea8e87fb6be82e6d39ed03daa72
-updated: 2019-04-17T17:01:05.9542229+02:00
+updated: 2019-04-28T22:31:07.680625+02:00
 imports:
 - name: github.com/Bowery/prompt
-  version: 8a1d5376df1cbec3468f2138fecc44dd8b48e342
+  version: 972d0ceb96f55132a1ba9714cb771ce19b3821ab
 - name: github.com/docker/distribution
-  version: 6d62eb1d4a3515399431b713fde3ce5a9b40e8d5
+  version: 3226863cbcba6dbc2f6c83a37b28126c934af3f8
   subpackages:
   - digestset
   - reference
   - registry/api/errcode
 - name: github.com/docker/docker
-  version: c2cb72e0858a61932007d549f788382117df66e6
+  version: 0c07dad66a09b393165b5f6c44d8f7eda2a722cb
   subpackages:
   - api
   - api/types
@@ -31,15 +31,15 @@ imports:
   - client
   - errdefs
 - name: github.com/docker/go-connections
-  version: 97c2040d34dfae1d1b1275fa3a78dbdd2f41cf7e
+  version: b44139defdac517e3f71df1e60826f8a262a2482
   subpackages:
   - nat
   - sockets
   - tlsconfig
 - name: github.com/docker/go-units
-  version: 2fb04c6466a548a03cb009c5569ee1ab1e35398e
+  version: 519db1ee28dcc9fd2474ae59fca29a810482bfb1
 - name: github.com/gogo/protobuf
-  version: 382325bbbb4d1c850eec1f3ec92a1a16f502d68b
+  version: 67e450fba6944c63d2f80b7553b0ef522d345962
   subpackages:
   - proto
 - name: github.com/golang/protobuf
@@ -59,9 +59,11 @@ imports:
 - name: github.com/mattn/go-colorable
   version: 3a70a971f94a22f2fa562ffcc7a0eb45f5daf045
 - name: github.com/mattn/go-isatty
-  version: c2a7a6ca930a4cd0bc33a3f298eb71960732a3a7
+  version: c1975dc15c1d481e8da23f6ed313bb071136b98f
 - name: github.com/Microsoft/go-winio
-  version: 84b4ab48a50763fe7b3abcef38e5205c12027fac
+  version: 3fe4fa31662f6ede2353d913e93907b8e096e0b6
+  subpackages:
+  - pkg/guid
 - name: github.com/mkideal/cli
   version: 41df2d00b0edfa4614da67cf68f41df9d4e55539
 - name: github.com/mkideal/pkg
@@ -81,21 +83,21 @@ imports:
 - name: github.com/sirupsen/logrus
   version: 9b3cdde74fbe9443d704467498a7dcb61a79de9b
 - name: golang.org/x/net
-  version: eb5bcb51f2a31c7d5141d810b70815c05d9c9146
+  version: 4829fb13d2c62012c17688fa7f629f371014946d
   subpackages:
   - internal/socks
   - proxy
 - name: golang.org/x/sys
-  version: 4b34438f7a67ee5f45cc6132e2bad873a20324e9
+  version: 804c0c7841b595338f049388006a3945cb3cfad1
   subpackages:
   - unix
   - windows
 - name: google.golang.org/genproto
-  version: 64821d5d210748c883cd2b809589555ae4654203
+  version: 357c62f0e4bbba7e6cc403ae09edcf3e2b9028fe
   subpackages:
   - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: e33051174bc15b756823131f1161f46a4b265c3a
+  version: a90198c718cf1e4c69867c118b00a0d9e5659f58
   subpackages:
   - codes
   - status
