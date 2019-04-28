@@ -1,0 +1,10 @@
+repos:
+  - name: test
+    location: https://github.com/docker/app
+    branch: cli-plugin
+
+steps:
+  - name: test
+    image: alpine
+    commands:
+      - pwd

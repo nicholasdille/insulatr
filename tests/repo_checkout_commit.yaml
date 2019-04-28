@@ -1,0 +1,10 @@
+repos:
+  - name: test
+    location: https://github.com/docker/app
+    commit: 1829fd1952a54da121b664ef2705684932ac10a9
+
+steps:
+  - name: test
+    image: alpine
+    commands:
+      - pwd

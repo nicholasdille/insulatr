@@ -1,0 +1,9 @@
+repos:
+  - name: test
+    location: https://github.com/nicholasdille/docker-cicd-env
+
+steps:
+  - name: test
+    image: alpine
+    commands:
+      - pwd

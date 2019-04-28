@@ -1,0 +1,10 @@
+repos:
+  - name: test
+    location: https://github.com/docker/app
+    tag: v0.4.0
+
+steps:
+  - name: test
+    image: alpine
+    commands:
+      - pwd

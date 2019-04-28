@@ -1,0 +1,11 @@
+steps:
+
+  - name: step1
+    image: alpine
+    commands:
+      - pwd
+
+  - name: step2
+    image: alpine
+    commands:
+      - pwd

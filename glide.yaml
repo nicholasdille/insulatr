@@ -1,0 +1,8 @@
+package: .
+import:
+- package: github.com/docker/docker
+  subpackages:
+  - api/types/filters
+  - api/types/volume
+  - client
+- package: gopkg.in/yaml.v2

@@ -1,0 +1,6 @@
+steps:
+  - name: test
+    image: alpine
+    user: 1000
+    commands:
+      - id -u

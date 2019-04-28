@@ -1,0 +1,8 @@
+services:
+  - name: web
+
+steps:
+  - name: test
+    image: alpine
+    commands:
+      - pwd

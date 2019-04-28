@@ -1,0 +1,5 @@
+steps:
+  - name: test
+    image: alpine
+    commands:
+      - printenv

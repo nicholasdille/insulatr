@@ -1,0 +1,8 @@
+repos:
+  - name: main
+    
+steps:
+  - name: test
+    image: alpine
+    commands:
+      - pwd

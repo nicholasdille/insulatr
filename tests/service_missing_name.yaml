@@ -1,0 +1,8 @@
+services:
+  - image: nginx
+
+steps:
+  - name: test
+    image: alpine
+    commands:
+      - pwd

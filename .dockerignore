@@ -1,0 +1,3 @@
+bin/insulatr
+vendor/**
+.gopath/**
