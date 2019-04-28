@@ -132,6 +132,7 @@ The `steps` node defines a list of build steps to execute. XXX.
 - `name` (mandatory) contains the given name of a build step.
 - `image` (mandatory) specifies the image to run the step with.
 - `commands` (mandatory) is a list of commands to execute in the build step.
+- `environment` (optional) defines the environment variables passed to the build step.
 - `user` (optional) is a user to execute the commands under.
 - `shell` (optional) overrides the [global `shell` setting](#settings).
 - `override_entrypoint` (optional) executes the shell as the entrypoint. It defaults to `false`.
@@ -142,6 +143,8 @@ Typical build steps look like this:
 steps:
   - name: build
     image: alpine
+    environment:
+      - FOO=bar
     commands:
       - printenv
 ```
@@ -164,13 +167,17 @@ repos:
 services:
   - name: web
     image: nginx
+  - name: mysql
+    image: mysql
+    environment:
+      - MYSQL_RANDOM_ROOT_PASSWORD=yes
 
 steps:
 
   - name: test
     image: alpine
     environment:
-      TEST: foobar
+      - TEST: foobar
     commands:
       - printenv
       - pwd
