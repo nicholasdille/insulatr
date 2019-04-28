@@ -39,12 +39,12 @@ check: format lint
 
 $(PACKAGE): bin/$(PACKAGE)
 
-bin/$(PACKAGE): $(SOURCE) ; $(info $(M) Building $(PACKAGE)...)
+bin/$(PACKAGE): $(BASE) $(SOURCE) ; $(info $(M) Building $(PACKAGE)...)
 	@cd $(BASE) && $(GO) build -o bin/$(PACKAGE) $(SOURCE)
 
 static: bin/$(STATIC)
 
-bin/$(STATIC): $(SOURCE) ; $(info $(M) Building static $(PACKAGE)...)
+bin/$(STATIC): $(BASE) $(SOURCE) ; $(info $(M) Building static $(PACKAGE)...)
 	@cd $(BASE) && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -a -tags netgo -ldflags '-w' -o bin/$(STATIC) $(SOURCE)
 
 check-docker:

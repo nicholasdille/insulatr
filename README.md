@@ -1,18 +1,35 @@
 # insulatr
 
-`insulatr` is a tool for container native builds.
+`insulatr` is a tool for container native builds written in Go.
 
 Based on a YAML file, `insulatr` isolates build steps in individual containers while results are transported using a Docker volume.
 
+## Table of contents
+
+1. [Usage](#usage)
+1. [Build definitions](#build-definitions)
+1. [Building](#building)
+1. [Design](#design)
+1. [Useful links](#useful-links)
+
 ## Usage
 
-XXX
+When calling `insulatr` without any parameters, it will look for a file called `insulatr.yaml` in the current directory.
 
-```bash
-insulatr --file insulatr.yaml
+The following parameters are supported:
+
 ```
+Options:
 
-XXX parameters
+  -h, --help                     display help information
+  -f, --file[=./insulatr.yaml]   Build definition file
+      --reuse-volume[=false]     Use existing volume
+      --remove-volume[=false]    Remove existing volume
+      --reuse-network[=false]    Use existing network
+      --remove-network[=false]   Remove existing network
+      --reuse[=false]            Same as --reuse-volume and --reuse-network
+      --remove[=false]           Same as --remove-volume and --remove-network
+```
 
 ### Docker image
 
@@ -40,7 +57,7 @@ alias insulatr="echo -e 'FROM nicholasdille/insulatr\nADD insulatr.yaml /' | doc
 
 ## Build definitions
 
-XXX
+`insulatr` requires a build definition written in YAML.
 
 ### Settings
 
