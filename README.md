@@ -15,7 +15,7 @@ Based on a YAML file, `insulatr` isolates build steps in individual containers w
 
 ## Why `insulatr`
 
-XXX
+`insulatr` enables container native builds without the requirement of a CI/CD tool. Although the tight integration of scheduling and pipeline-as-code is beneficial, being able to choose separate tools for the job is a nice thing.
 
 ## Usage
 
