@@ -41,6 +41,8 @@ lint: $(BASE) $(GOLINT) ; $(info $(M) Running linter...)
 
 check: format lint
 
+binary: $(PACKAGE)
+
 $(PACKAGE): bin/$(PACKAGE)
 
 bin/$(PACKAGE): $(BASE) $(SOURCE) ; $(info $(M) Building $(PACKAGE)...)
