@@ -78,3 +78,14 @@ ssh-%: static ; $(info $(M) Running remotely on $*)
 	@scp bin/$(STATIC) $*:~/
 	@scp insulatr.yaml $*:~/
 	@ssh $* ./$(STATIC)
+
+tag-%: ; $(info $(M) Tagging as $*)
+	@hub tag $*
+
+release-%: static ; $(info $(M) Releasing milestone $* as $(GIT_TAG))
+	@( \
+	    echo Version $(GIT_TAG); \
+	    echo; \
+	    hub issue -M $* -s all -f "[%t](%U)%n"; \
+	) > $(GIT_TAG).txt
+	@hub release create -F $(GIT_TAG).txt -a bin/$(STATIC) -a bin/$(STATIC).sha256 $(GIT_TAG)
