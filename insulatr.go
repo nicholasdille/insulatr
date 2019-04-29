@@ -31,10 +31,10 @@ type Repository struct {
 
 // Service is used to import from YaML
 type Service struct {
-	Name            string   `yaml:"name"`
-	Image           string   `yaml:"image"`
-	Environment     []string `yaml:"environment"`
-        Privileged      bool     `yaml:"privileged"`
+	Name        string   `yaml:"name"`
+	Image       string   `yaml:"image"`
+	Environment []string `yaml:"environment"`
+	Privileged  bool     `yaml:"privileged"`
 }
 
 // Step is used to import from YaML
@@ -45,8 +45,8 @@ type Step struct {
 	OverrideEntrypoint bool     `yaml:"override_entrypoint"`
 	User               string   `yaml:"user"`
 	Commands           []string `yaml:"commands"`
-        Environment        []string `yaml:"environment"`
-        MountDockerSock    bool     `yaml:"mount_docker_sock"`
+	Environment        []string `yaml:"environment"`
+	MountDockerSock    bool     `yaml:"mount_docker_sock"`
 }
 
 // Build is used to import from YaML
@@ -73,13 +73,13 @@ func defaults() *Build {
 }
 
 func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, mustRemoveNetwork bool, allowDockerSock bool, allowPrivileged bool) error {
-        if len(build.Repositories) > 1 {
-                for _, repo := range build.Repositories {
-                        if len(repo.Directory) == 0 || repo.Directory == "." {
-                                return errors.New("All repositories require the directory node to be set (<.> is not allowed).")
-                        }
-                }
-        }
+	if len(build.Repositories) > 1 {
+		for _, repo := range build.Repositories {
+			if len(repo.Directory) == 0 || repo.Directory == "." {
+				return errors.New("All repositories require the directory node to be set (<.> is not allowed)")
+			}
+		}
+	}
 
 	ctx := context.Background()
 	ctxTimeout, cancel := context.WithTimeout(ctx, time.Duration(build.Settings.Timeout)*time.Second)
@@ -155,7 +155,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				service.Environment,
 				build.Settings.NetworkName,
 				service.Name,
-                                service.Privileged,
+				service.Privileged,
 			)
 			if err != nil {
 				fmt.Println(err)
@@ -220,7 +220,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				"",
 				build.Settings.VolumeName,
 				false,
-                                false,
+				false,
 			)
 			fmt.Printf("%s\n", cloneOutput)
 			if err != nil {
@@ -241,7 +241,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 					"",
 					build.Settings.VolumeName,
 					false,
-                                        false,
+					false,
 				)
 				fmt.Printf("%s\n", fetchOutput)
 				if err != nil {
@@ -261,7 +261,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 					"",
 					build.Settings.VolumeName,
 					false,
-                                        false,
+					false,
 				)
 				fmt.Printf("%s\n", checkoutOutput)
 				if err != nil {
@@ -306,7 +306,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				build.Settings.NetworkName,
 				build.Settings.VolumeName,
 				step.OverrideEntrypoint,
-                                step.MountDockerSock,
+				step.MountDockerSock,
 			)
 			fmt.Printf("%s\n", output)
 			if err != nil {

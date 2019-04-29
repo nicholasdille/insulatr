@@ -17,25 +17,30 @@ type argT struct {
 	RemoveNetwork   bool   `cli:"remove-network"    usage:"Remove existing network"                      dft:"false"`
 	Reuse           bool   `cli:"reuse"             usage:"Same as --reuse-volume and --reuse-network"   dft:"false"`
 	Remove          bool   `cli:"remove"            usage:"Same as --remove-volume and --remove-network" dft:"false"`
-        AllowDockerSock bool   `cli:"allow-docker-sock" usage:"Allow docker socket in build steps"           dft:"false"`
-        AllowPrivileged bool   `cli:"allow-privileged"  usage:"Allow privileged container for services"      dft:"false"`
+	AllowDockerSock bool   `cli:"allow-docker-sock" usage:"Allow docker socket in build steps"           dft:"false"`
+	AllowPrivileged bool   `cli:"allow-privileged"  usage:"Allow privileged container for services"      dft:"false"`
 }
 
+// GitCommit will be filled from build flags
 var GitCommit string
+
+// BuildTime will be filled from build flags
 var BuildTime string
+
+// Version will be filled from build flags
 var Version string
 
 func main() {
-        if len(GitCommit) == 0 {
-                GitCommit = "UNKNOWN"
-        }
-        if len(BuildTime) == 0 {
-                BuildTime = "UNKNOWN"
-        }
-        if len(Version) == 0 {
-                Version = "UNKNOWN"
-        }
-        fmt.Printf("Running insulatr version %s built at %s from %s\n", Version, BuildTime, GitCommit)
+	if len(GitCommit) == 0 {
+		GitCommit = "UNKNOWN"
+	}
+	if len(BuildTime) == 0 {
+		BuildTime = "UNKNOWN"
+	}
+	if len(Version) == 0 {
+		Version = "UNKNOWN"
+	}
+	fmt.Printf("Running insulatr version %s built at %s from %s\n", Version, BuildTime, GitCommit)
 
 	os.Exit(cli.Run(new(argT), func(ctx *cli.Context) error {
 		argv := ctx.Argv().(*argT)

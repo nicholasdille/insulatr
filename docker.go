@@ -117,21 +117,21 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 	if len(user) > 0 {
 		containerConfig.User = user
 	}
-        mounts := []mount.Mount{
+	mounts := []mount.Mount{
 		{
 			Type:   mount.TypeVolume,
 			Source: volume,
 			Target: dir,
 		},
 	}
-        if mountDockerSock {
-            fmt.Printf("Warning: Mounting Docker socket.\n")
-                mounts = append(mounts, mount.Mount{
-                        Type:   mount.TypeBind,
-                        Source: "/var/run/docker.sock",
-                        Target: "/var/run/docker.sock",
-                })
-        }
+	if mountDockerSock {
+		fmt.Printf("Warning: Mounting Docker socket.\n")
+		mounts = append(mounts, mount.Mount{
+			Type:   mount.TypeBind,
+			Source: "/var/run/docker.sock",
+			Target: "/var/run/docker.sock",
+		})
+	}
 	endpoints := make(map[string]*dockernetwork.EndpointSettings, 1)
 	if len(network) > 0 {
 		endpoints[network] = &dockernetwork.EndpointSettings{}
@@ -141,7 +141,7 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 		&containerConfig,
 		&container.HostConfig{
 			AutoRemove: true,
-			Mounts: mounts,
+			Mounts:     mounts,
 		},
 		&dockernetwork.NetworkingConfig{
 			EndpointsConfig: endpoints,
@@ -230,11 +230,11 @@ func runBackgroundContainer(ctx *context.Context, cli *client.Client, image stri
 
 	// create container
 	fmt.Printf("=== create\n")
-        hostConfig := container.HostConfig{}
-        if privileged {
-            fmt.Printf("Warning: Running privileged container.\n")
-            hostConfig.Privileged = true
-        }
+	hostConfig := container.HostConfig{}
+	if privileged {
+		fmt.Printf("Warning: Running privileged container.\n")
+		hostConfig.Privileged = true
+	}
 	endpoints := make(map[string]*dockernetwork.EndpointSettings, 1)
 	if len(network) > 0 {
 		endpoints[network] = &dockernetwork.EndpointSettings{}
