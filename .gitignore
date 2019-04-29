@@ -1,3 +1,4 @@
 vendor/**
 .gopath/**
 bin/**
+.*.swp
