@@ -21,6 +21,9 @@ services:
     image: mysql
     environment:
       - MYSQL_RANDOM_ROOT_PASSWORD=yes
+  - name: dind
+    image: docker:dind
+    privileged: true
 
 steps:
 
@@ -30,12 +33,11 @@ steps:
       - TEST=foobar
     commands:
       - pwd
-      - find . -type d
       - ls -l
       - ip a
       - printenv
       - df
-      - test -f .git/shallow
+      - test -f app/.git/shallow
 
   - name: web
     image: alpine
@@ -55,3 +57,16 @@ steps:
     override_entrypoint: true
     commands:
       - pwd
+
+  - name: build
+    image: docker:stable
+    environment:
+      - DOCKER_HOST=tcp://dind:2375
+    commands:
+      - docker version
+
+  - name: dood
+    image: docker:stable
+    mount_docker_sock: true
+    commands:
+      - docker version

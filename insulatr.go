@@ -31,9 +31,10 @@ type Repository struct {
 
 // Service is used to import from YaML
 type Service struct {
-	Name        string   `yaml:"name"`
-	Image       string   `yaml:"image"`
-	Environment []string `yaml:"environment"`
+	Name            string   `yaml:"name"`
+	Image           string   `yaml:"image"`
+	Environment     []string `yaml:"environment"`
+        Privileged      bool     `yaml:"privileged"`
 }
 
 // Step is used to import from YaML
@@ -45,6 +46,7 @@ type Step struct {
 	User               string   `yaml:"user"`
 	Commands           []string `yaml:"commands"`
         Environment        []string `yaml:"environment"`
+        MountDockerSock    bool     `yaml:"mount_docker_sock"`
 }
 
 // Build is used to import from YaML
@@ -70,7 +72,7 @@ func defaults() *Build {
 	}
 }
 
-func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, mustRemoveNetwork bool) error {
+func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, mustRemoveNetwork bool, allowDockerSock bool, allowPrivileged bool) error {
         if len(build.Repositories) > 1 {
                 for _, repo := range build.Repositories {
                         if len(repo.Directory) == 0 || repo.Directory == "." {
@@ -153,6 +155,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				service.Environment,
 				build.Settings.NetworkName,
 				service.Name,
+                                service.Privileged,
 			)
 			if err != nil {
 				fmt.Println(err)
@@ -217,6 +220,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				"",
 				build.Settings.VolumeName,
 				false,
+                                false,
 			)
 			fmt.Printf("%s\n", cloneOutput)
 			if err != nil {
@@ -237,6 +241,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 					"",
 					build.Settings.VolumeName,
 					false,
+                                        false,
 				)
 				fmt.Printf("%s\n", fetchOutput)
 				if err != nil {
@@ -256,6 +261,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 					"",
 					build.Settings.VolumeName,
 					false,
+                                        false,
 				)
 				fmt.Printf("%s\n", checkoutOutput)
 				if err != nil {
@@ -300,6 +306,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				build.Settings.NetworkName,
 				build.Settings.VolumeName,
 				step.OverrideEntrypoint,
+                                step.MountDockerSock,
 			)
 			fmt.Printf("%s\n", output)
 			if err != nil {

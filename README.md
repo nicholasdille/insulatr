@@ -26,14 +26,16 @@ The following parameters are supported:
 ```
 Options:
 
-  -h, --help                     display help information
-  -f, --file[=./insulatr.yaml]   Build definition file
-      --reuse-volume[=false]     Use existing volume
-      --remove-volume[=false]    Remove existing volume
-      --reuse-network[=false]    Use existing network
-      --remove-network[=false]   Remove existing network
-      --reuse[=false]            Same as --reuse-volume and --reuse-network
-      --remove[=false]           Same as --remove-volume and --remove-network
+  -h, --help                        display help information
+  -f, --file[=./insulatr.yaml]      Build definition file
+      --reuse-volume[=false]        Use existing volume
+      --remove-volume[=false]       Remove existing volume
+      --reuse-network[=false]       Use existing network
+      --remove-network[=false]      Remove existing network
+      --reuse[=false]               Same as --reuse-volume and --reuse-network
+      --remove[=false]              Same as --remove-volume and --remove-network
+      --allow-docker-sock[=false]   Allow docker socket in build steps
+      --allow-privileged[=false]    Allow privileged container for services
 ```
 
 ### Docker image
@@ -116,6 +118,7 @@ The `services` node defines a list of services required by the build steps. The 
 - `name` (mandatory) contains the given name for a repository.
 - `image` (mandatory) specifies the image to run the services with.
 - `environment` (optional) defines the environment variables required to configure the service.
+- `privileged` (optional) specifies whether the container will be privileged. It defaults to `false`.
 
 A typical service definition looks like this:
 
@@ -136,6 +139,7 @@ The `steps` node defines a list of build steps to execute. XXX.
 - `user` (optional) is a user to execute the commands under.
 - `shell` (optional) overrides the [global `shell` setting](#settings).
 - `override_entrypoint` (optional) executes the shell as the entrypoint. It defaults to `false`.
+- `mount_docker_sock` (optional) mounts `/var/run/docker.sock` into the container. It defaults to `false`.
 
 Typical build steps look like this:
 

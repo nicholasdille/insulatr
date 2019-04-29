@@ -85,7 +85,7 @@ func createNetwork(ctx *context.Context, cli *client.Client, name string, driver
 	return network.ID, nil
 }
 
-func runForegroundContainer(ctx *context.Context, cli *client.Client, image string, shell []string, commands []string, user string, environment []string, dir string, network string, volume string, overrideEntrypoint bool) (string, error) {
+func runForegroundContainer(ctx *context.Context, cli *client.Client, image string, shell []string, commands []string, user string, environment []string, dir string, network string, volume string, overrideEntrypoint bool, mountDockerSock bool) (string, error) {
 	result := ""
 
 	// pull image
@@ -117,6 +117,21 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 	if len(user) > 0 {
 		containerConfig.User = user
 	}
+        mounts := []mount.Mount{
+		{
+			Type:   mount.TypeVolume,
+			Source: volume,
+			Target: dir,
+		},
+	}
+        if mountDockerSock {
+            fmt.Printf("Warning: Mounting Docker socket.\n")
+                mounts = append(mounts, mount.Mount{
+                        Type:   mount.TypeBind,
+                        Source: "/var/run/docker.sock",
+                        Target: "/var/run/docker.sock",
+                })
+        }
 	endpoints := make(map[string]*dockernetwork.EndpointSettings, 1)
 	if len(network) > 0 {
 		endpoints[network] = &dockernetwork.EndpointSettings{}
@@ -126,13 +141,7 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 		&containerConfig,
 		&container.HostConfig{
 			AutoRemove: true,
-			Mounts: []mount.Mount{
-				{
-					Type:   mount.TypeVolume,
-					Source: volume,
-					Target: dir,
-				},
-			},
+			Mounts: mounts,
 		},
 		&dockernetwork.NetworkingConfig{
 			EndpointsConfig: endpoints,
@@ -210,7 +219,7 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 	return result, nil
 }
 
-func runBackgroundContainer(ctx *context.Context, cli *client.Client, image string, environment []string, network string, name string) (string, error) {
+func runBackgroundContainer(ctx *context.Context, cli *client.Client, image string, environment []string, network string, name string, privileged bool) (string, error) {
 	// pull image
 	fmt.Printf("=== pull\n")
 	reader, err := cli.ImagePull(*ctx, image, types.ImagePullOptions{})
@@ -221,6 +230,11 @@ func runBackgroundContainer(ctx *context.Context, cli *client.Client, image stri
 
 	// create container
 	fmt.Printf("=== create\n")
+        hostConfig := container.HostConfig{}
+        if privileged {
+            fmt.Printf("Warning: Running privileged container.\n")
+            hostConfig.Privileged = true
+        }
 	endpoints := make(map[string]*dockernetwork.EndpointSettings, 1)
 	if len(network) > 0 {
 		endpoints[network] = &dockernetwork.EndpointSettings{}
@@ -231,7 +245,7 @@ func runBackgroundContainer(ctx *context.Context, cli *client.Client, image stri
 			Image: image,
 			Env:   environment,
 		},
-		&container.HostConfig{},
+		&hostConfig,
 		&dockernetwork.NetworkingConfig{
 			EndpointsConfig: endpoints,
 		},
