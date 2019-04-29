@@ -155,7 +155,7 @@ steps:
 
 ### Example
 
-```
+```yaml
 settings:
   volume_name: myvolume
   working_directory: /src
@@ -166,36 +166,18 @@ repos:
   - name: main
     location: https://github.com/docker/app
     shallow: true
-    directory: .
+    directory: app
+  - name: main
+    location: https://github.com/docker/distribution
+    shallow: true
+    directory: distribution
 
 services:
-  - name: web
-    image: nginx
-  - name: mysql
-    image: mysql
-    environment:
-      - MYSQL_RANDOM_ROOT_PASSWORD=yes
+  - name: dind
+    image: docker:dind
+    privileged: true
 
 steps:
-
-  - name: test
-    image: alpine
-    environment:
-      - TEST: foobar
-    commands:
-      - printenv
-      - pwd
-      - ls -l
-      - ip a
-      - df
-      - test -f .git/shallow
-
-  - name: web
-    image: alpine
-    commands:
-      - apk update
-      - apk add curl
-      - curl -s web
 
   - name: user
     image: alpine
@@ -203,11 +185,20 @@ steps:
     commands:
       - id -u
 
-  - name: entrypoint
-    image: alpine/git
-    override_entrypoint: true
+  - name: build
+    image: docker:stable
+    environment:
+      - DOCKER_HOST=tcp://dind:2375
     commands:
-      - pwd
+      - printenv
+      - docker version
+
+  - name: dood
+    image: docker:stable
+    override_entrypoint: true
+    mount_docker_sock: true
+    commands:
+      - docker version
 ```
 
 ## Building

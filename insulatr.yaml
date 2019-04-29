@@ -15,36 +15,11 @@ repos:
     directory: distribution
 
 services:
-  - name: web
-    image: nginx
-  - name: mysql
-    image: mysql
-    environment:
-      - MYSQL_RANDOM_ROOT_PASSWORD=yes
   - name: dind
     image: docker:dind
     privileged: true
 
 steps:
-
-  - name: test
-    image: alpine
-    environment:
-      - TEST=foobar
-    commands:
-      - pwd
-      - ls -l
-      - ip a
-      - printenv
-      - df
-      - test -f app/.git/shallow
-
-  - name: web
-    image: alpine
-    commands:
-      - apk update
-      - apk add curl
-      - curl -s web
 
   - name: user
     image: alpine
@@ -52,21 +27,17 @@ steps:
     commands:
       - id -u
 
-  - name: entrypoint
-    image: alpine/git
-    override_entrypoint: true
-    commands:
-      - pwd
-
   - name: build
     image: docker:stable
     environment:
       - DOCKER_HOST=tcp://dind:2375
     commands:
+      - printenv
       - docker version
 
   - name: dood
     image: docker:stable
+    override_entrypoint: true
     mount_docker_sock: true
     commands:
       - docker version
