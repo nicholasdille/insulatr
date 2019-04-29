@@ -1,6 +1,6 @@
 PACKAGE = insulatr
 STATIC  = insulatr-$(shell uname -m)
-SOURCE  = *.go
+SOURCE  = $(shell echo *.go)
 GOPATH  = $(CURDIR)/.gopath
 BIN     = $(GOPATH)/bin
 BASE    = $(GOPATH)/src/$(PACKAGE)
