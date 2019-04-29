@@ -1,4 +1,9 @@
-package: .
+package: github.com/nicholasdille/insulatr
+homepage: https://github.com/nicholasdille/insulatr
+license: MIT
+owners:
+- name: Nicholas Dille
+  homepage: https://dille.name
 import:
 - package: github.com/docker/docker
   subpackages:
