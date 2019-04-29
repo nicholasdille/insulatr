@@ -1,18 +1,11 @@
 settings:
-  volume_name: myvolume
-  working_directory: /src
   shell: [ "sh", "-x", "-e" ]
-  network_name: mynetwork
 
 repos:
-  - name: main
-    location: https://github.com/docker/app
+  - name: insulatr
+    location: https://github.com/nicholasdille/insulatr
     shallow: true
-    directory: app
-  - name: main
-    location: https://github.com/docker/distribution
-    shallow: true
-    directory: distribution
+    directory: .
 
 services:
   - name: dind
@@ -21,23 +14,9 @@ services:
 
 steps:
 
-  - name: user
-    image: alpine
-    user: 1000
-    commands:
-      - id -u
-
   - name: build
     image: docker:stable
     environment:
       - DOCKER_HOST=tcp://dind:2375
     commands:
-      - printenv
-      - docker version
-
-  - name: dood
-    image: docker:stable
-    override_entrypoint: true
-    mount_docker_sock: true
-    commands:
-      - docker version
+      - docker build --tag insulatr:latest .
