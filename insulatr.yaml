@@ -8,7 +8,11 @@ repos:
   - name: main
     location: https://github.com/docker/app
     shallow: true
-    directory: .
+    directory: app
+  - name: main
+    location: https://github.com/docker/distribution
+    shallow: true
+    directory: distribution
 
 services:
   - name: web
@@ -26,6 +30,7 @@ steps:
       - TEST=foobar
     commands:
       - pwd
+      - find . -type d
       - ls -l
       - ip a
       - printenv

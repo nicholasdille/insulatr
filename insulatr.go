@@ -71,6 +71,14 @@ func defaults() *Build {
 }
 
 func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, mustRemoveNetwork bool) error {
+        if len(build.Repositories) > 1 {
+                for _, repo := range build.Repositories {
+                        if len(repo.Directory) == 0 || repo.Directory == "." {
+                                return errors.New("All repositories require the directory node to be set (<.> is not allowed).")
+                        }
+                }
+        }
+
 	ctx := context.Background()
 	ctxTimeout, cancel := context.WithTimeout(ctx, time.Duration(build.Settings.Timeout)*time.Second)
 	defer cancel()
