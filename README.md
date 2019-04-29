@@ -8,6 +8,9 @@ Based on a YAML file, `insulatr` isolates build steps in individual containers w
 
 1. [Why `insulatr`](#why-insulatr)
 1. [Usage](#usage)
+    1. [Local](#local)
+    1. [Docker image](#docker-image)
+    1. [Alias](#alias)
 1. [Build definitions](#build-definitions)
 1. [Building](#building)
 1. [Design](#design)
@@ -18,6 +21,10 @@ Based on a YAML file, `insulatr` isolates build steps in individual containers w
 `insulatr` enables container native builds without the requirement of a CI/CD tool. Although the tight integration of scheduling and pipeline-as-code is beneficial, being able to choose separate tools for the job is a nice thing.
 
 ## Usage
+
+`insulatr` supports different ways to launch.
+
+### Local
 
 When calling `insulatr` without any parameters, it will look for a file called `insulatr.yaml` in the current directory.
 
