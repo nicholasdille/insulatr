@@ -88,7 +88,7 @@ changelog-%: ; $(info $(M) Releasing milestone $* as $(GIT_TAG))
 	@( \
 	    echo Version $(GIT_TAG); \
 	    echo; \
-	    hub issue -M $* -s all -f "[%t](%U)%n"; \
+	    hub issue -M $* -s closed -f "[%t](%U)%n"; \
 	) > $(GIT_TAG).txt
 
 release-%: static changelog-$* ; $(info $(M) Releasing milestone $* as $(GIT_TAG))
