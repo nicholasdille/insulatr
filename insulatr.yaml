@@ -19,5 +19,8 @@ steps:
     image: docker:stable
     environment:
       - DOCKER_HOST=tcp://dind:2375
+      - HUB_USER
+      - HUB_PASS
     commands:
-      - docker build --tag insulatr:latest .
+      - printenv
+      #- docker build --tag insulatr:latest .

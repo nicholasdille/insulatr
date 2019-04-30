@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -295,6 +296,24 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 
 			if len(step.Shell) == 0 {
 				step.Shell = build.Settings.Shell
+			}
+
+			for _, envVarDef := range step.Environment {
+				if !strings.Contains(envVarDef, "=") {
+					FoundMatch := false
+					for _, envVar := range os.Environ() {
+						pair := strings.Split(envVar, "=")
+						if pair[0] == envVarDef {
+							envVarDef = envVar
+							FoundMatch = true
+						}
+					}
+					if !FoundMatch {
+						fmt.Printf("Error: Unable to find match for environment variable %s\n", envVarDef)
+						FailedBuild = true
+						//
+					}
+				}
 			}
 
 			err := runForegroundContainer(
