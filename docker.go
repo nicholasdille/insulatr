@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"github.com/docker/docker/api/types"
@@ -14,7 +15,6 @@ import (
 	"github.com/docker/docker/client"
 	"io"
 	"io/ioutil"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -85,29 +85,21 @@ func createNetwork(ctx *context.Context, cli *client.Client, name string, driver
 	return network.ID, nil
 }
 
-func runForegroundContainer(ctx *context.Context, cli *client.Client, image string, shell []string, commands []string, user string, environment []string, dir string, network string, volume string, overrideEntrypoint bool, mountDockerSock bool) (string, error) {
-	result := ""
-
+func runForegroundContainer(ctx *context.Context, cli *client.Client, image string, shell []string, commands []string, user string, environment []string, dir string, network string, volume string, overrideEntrypoint bool, mountDockerSock bool, logWriter io.Writer) error {
 	// pull image
-	fmt.Printf("=== pull\n")
-	reader, err := cli.ImagePull(*ctx, image, types.ImagePullOptions{})
+	_, err := cli.ImagePull(*ctx, image, types.ImagePullOptions{})
 	if err != nil {
-		return "", err
+		return err
 	}
-	io.Copy(os.Stdout, reader)
 
 	// create container
-	fmt.Printf("=== create\n")
 	containerConfig := container.Config{
-		Image:        image,
-		Tty:          false,
-		AttachStdin:  true,
-		AttachStdout: true,
-		AttachStderr: true,
-		OpenStdin:    true,
-		StdinOnce:    true,
-		WorkingDir:   dir,
-		Env:          environment,
+		Image:       image,
+		AttachStdin: true,
+		OpenStdin:   true,
+		StdinOnce:   true,
+		WorkingDir:  dir,
+		Env:         environment,
 	}
 	if overrideEntrypoint {
 		containerConfig.Entrypoint = shell
@@ -140,8 +132,7 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 		*ctx,
 		&containerConfig,
 		&container.HostConfig{
-			AutoRemove: true,
-			Mounts:     mounts,
+			Mounts: mounts,
 		},
 		&dockernetwork.NetworkingConfig{
 			EndpointsConfig: endpoints,
@@ -149,87 +140,90 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 		"",
 	)
 	if err != nil {
-		return "", err
+		return err
 	}
 	ContainerID := resp.ID
-	fmt.Printf("%s\n", ContainerID)
 
 	// Attach
-	fmt.Printf("=== attach\n")
 	AttachResp, err := cli.ContainerAttach(*ctx, ContainerID, types.ContainerAttachOptions{
 		Stream: true,
 		Stdin:  true,
-		Stdout: true,
-		Stderr: true,
 	})
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer AttachResp.Close()
 
 	// Start container
-	fmt.Printf("=== start\n")
 	if err := cli.ContainerStart(*ctx, ContainerID, types.ContainerStartOptions{}); err != nil {
-		return "", err
+		return err
 	}
 
-	attachCh := make(chan error, 2)
-	logCh := make(chan string, 1)
+	// Send commands
+	_, err = io.Copy(AttachResp.Conn, bytes.NewBufferString(strings.Join(commands, "\n")))
+	AttachResp.CloseWrite()
+	if err != nil {
+		return err
+	}
 
 	// Retrieve output
+	reader, err := cli.ContainerLogs(*ctx, ContainerID, types.ContainerLogsOptions{
+		ShowStdout: true,
+		ShowStderr: true,
+		Follow:     true,
+	})
 	go func() {
-		b, err := ioutil.ReadAll(AttachResp.Reader)
-		if err != nil {
-			attachCh <- err
-		}
-		logCh <- string(b)
-	}()
-
-	// Send commands
-	go func() {
-		_, err = io.Copy(AttachResp.Conn, bytes.NewBufferString(strings.Join(commands, "\n")))
-		AttachResp.CloseWrite()
-		if err != nil {
-			attachCh <- err
+		hdr := make([]byte, 8)
+		for {
+			_, err := reader.Read(hdr)
+			if err != nil {
+				return
+			}
+			count := binary.BigEndian.Uint32(hdr[4:])
+			dat := make([]byte, count)
+			_, err = reader.Read(dat)
+			logWriter.Write(dat)
 		}
 	}()
 
 	// Wait
 	statusCh, errCh := cli.ContainerWait(*ctx, ContainerID, container.WaitConditionNotRunning)
+	var status container.ContainerWaitOKBody
 	select {
+	// Waits for timeout
 	case <-(*ctx).Done():
-		return "", (*ctx).Err()
+		return (*ctx).Err()
+		// Waits for error
 	case err := <-errCh:
 		if err != nil {
-			return "", err
+			return err
 		}
-	case err = <-attachCh:
-		return "", err
-	case status := <-statusCh:
-		if status.StatusCode > 0 {
-			result = <-logCh
-			return result, errors.New("Return code not zero (" + strconv.FormatInt(status.StatusCode, 10) + ")")
-		}
+	// Waits for status code
+	case status = <-statusCh:
 	}
 
-	result = <-logCh
+	// Remove container
+	err = cli.ContainerRemove(*ctx, ContainerID, types.ContainerRemoveOptions{})
+	if err != nil {
+		return err
+	}
 
-	fmt.Printf("=== done\n")
+	// Check return code
+	if status.StatusCode > 0 {
+		return errors.New("Return code not zero (" + strconv.FormatInt(status.StatusCode, 10) + ")")
+	}
 
-	return result, nil
+	return nil
 }
 
 func runBackgroundContainer(ctx *context.Context, cli *client.Client, image string, environment []string, network string, name string, privileged bool) (string, error) {
 	// pull image
-	fmt.Printf("=== pull\n")
-	reader, err := cli.ImagePull(*ctx, image, types.ImagePullOptions{})
+	_, err := cli.ImagePull(*ctx, image, types.ImagePullOptions{})
 	if err != nil {
 		return "", err
 	}
-	io.Copy(os.Stdout, reader)
 
 	// create container
-	fmt.Printf("=== create\n")
 	hostConfig := container.HostConfig{}
 	if privileged {
 		fmt.Printf("Warning: Running privileged container.\n")
@@ -258,22 +252,17 @@ func runBackgroundContainer(ctx *context.Context, cli *client.Client, image stri
 	fmt.Printf("%s\n", ContainerID)
 
 	// Start container
-	fmt.Printf("=== start\n")
 	if err := cli.ContainerStart(*ctx, ContainerID, types.ContainerStartOptions{}); err != nil {
 		return ContainerID, err
 	}
 
-	fmt.Printf("=== done\n")
-
 	return ContainerID, err
 }
 
-func stopAndRemoveContainer(ctx *context.Context, cli *client.Client, containerID string) (string, error) {
-	result := ""
-
+func stopAndRemoveContainer(ctx *context.Context, cli *client.Client, containerID string, logWriter io.Writer) error {
 	err := cli.ContainerStop(*ctx, containerID, nil)
 	if err != nil {
-		return result, err
+		return err
 	}
 
 	reader, err := cli.ContainerLogs(*ctx, containerID, types.ContainerLogsOptions{
@@ -281,18 +270,33 @@ func stopAndRemoveContainer(ctx *context.Context, cli *client.Client, containerI
 		ShowStderr: true,
 	})
 	if err != nil {
-		return result, err
+		return err
 	}
 	b, err := ioutil.ReadAll(reader)
 	if err != nil {
-		return result, err
+		return err
 	}
-	result = string(b)
+	logWriter.Write(b)
+
+	hdr := make([]byte, 8)
+	for {
+		_, err := reader.Read(hdr)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
+		count := binary.BigEndian.Uint32(hdr[4:])
+		dat := make([]byte, count)
+		_, err = reader.Read(dat)
+		logWriter.Write(dat)
+	}
 
 	err = cli.ContainerRemove(*ctx, containerID, types.ContainerRemoveOptions{})
 	if err != nil {
-		return result, err
+		return err
 	}
 
-	return result, nil
+	return nil
 }

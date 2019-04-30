@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 )
 
@@ -208,7 +209,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				commands = append(commands, repo.Directory)
 			}
 
-			cloneOutput, err := runForegroundContainer(
+			err := runForegroundContainer(
 				&ctxTimeout,
 				cli,
 				"alpine/git",
@@ -221,15 +222,15 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				build.Settings.VolumeName,
 				false,
 				false,
+				os.Stdout,
 			)
-			fmt.Printf("%s\n", cloneOutput)
 			if err != nil {
 				fmt.Println(err)
 				FailedBuild = true
 			}
 
 			if len(ref) > 0 {
-				fetchOutput, err := runForegroundContainer(
+				err := runForegroundContainer(
 					&ctxTimeout,
 					cli,
 					"alpine/git",
@@ -242,14 +243,14 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 					build.Settings.VolumeName,
 					false,
 					false,
+					os.Stdout,
 				)
-				fmt.Printf("%s\n", fetchOutput)
 				if err != nil {
 					fmt.Println(err)
 					FailedBuild = true
 				}
 
-				checkoutOutput, err := runForegroundContainer(
+				err = runForegroundContainer(
 					&ctxTimeout,
 					cli,
 					"alpine/git",
@@ -262,8 +263,8 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 					build.Settings.VolumeName,
 					false,
 					false,
+					os.Stdout,
 				)
-				fmt.Printf("%s\n", checkoutOutput)
 				if err != nil {
 					fmt.Println(err)
 					FailedBuild = true
@@ -294,7 +295,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				step.Shell = build.Settings.Shell
 			}
 
-			output, err := runForegroundContainer(
+			err := runForegroundContainer(
 				&ctxTimeout,
 				cli,
 				step.Image,
@@ -307,8 +308,8 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				build.Settings.VolumeName,
 				step.OverrideEntrypoint,
 				step.MountDockerSock,
+				os.Stdout,
 			)
-			fmt.Printf("%s\n", output)
 			if err != nil {
 				fmt.Println(err)
 				FailedBuild = true
@@ -321,8 +322,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 	fmt.Printf("########## Stopping services\n")
 	for name, containerID := range services {
 		fmt.Printf("=== stopping service %s\n", name)
-		output, err := stopAndRemoveContainer(&ctx, cli, containerID)
-		fmt.Printf("%s\n", output)
+		err := stopAndRemoveContainer(&ctx, cli, containerID, os.Stdout)
 		if err != nil {
 			fmt.Printf("Error stopping service %s with ID %s\n", name, containerID)
 			FailedBuild = true
