@@ -11,6 +11,7 @@ services:
   - name: dind
     image: docker:dind
     privileged: true
+    suppress_log: true
 
 steps:
 

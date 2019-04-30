@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"time"
 )
@@ -35,6 +36,7 @@ type Service struct {
 	Name        string   `yaml:"name"`
 	Image       string   `yaml:"image"`
 	Environment []string `yaml:"environment"`
+	SuppressLog bool     `yaml:"suppress_log"`
 	Privileged  bool     `yaml:"privileged"`
 }
 
@@ -322,7 +324,18 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 	fmt.Printf("########## Stopping services\n")
 	for name, containerID := range services {
 		fmt.Printf("=== stopping service %s\n", name)
-		err := stopAndRemoveContainer(&ctx, cli, containerID, os.Stdout)
+		var logWriter io.Writer
+		logWriter = os.Stdout
+		var service Service
+		for _, service = range build.Services {
+			if service.Name == name {
+				break
+			}
+		}
+		if service.SuppressLog {
+			logWriter = nil
+		}
+		err := stopAndRemoveContainer(&ctx, cli, containerID, logWriter)
 		if err != nil {
 			fmt.Printf("Error stopping service %s with ID %s\n", name, containerID)
 			FailedBuild = true

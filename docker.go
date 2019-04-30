@@ -14,7 +14,6 @@ import (
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	"io"
-	"io/ioutil"
 	"strconv"
 	"strings"
 )
@@ -272,25 +271,21 @@ func stopAndRemoveContainer(ctx *context.Context, cli *client.Client, containerI
 	if err != nil {
 		return err
 	}
-	b, err := ioutil.ReadAll(reader)
-	if err != nil {
-		return err
-	}
-	logWriter.Write(b)
-
-	hdr := make([]byte, 8)
-	for {
-		_, err := reader.Read(hdr)
-		if err != nil {
-			if err == io.EOF {
-				break
+	if logWriter != nil {
+		hdr := make([]byte, 8)
+		for {
+			_, err := reader.Read(hdr)
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				return err
 			}
-			return err
+			count := binary.BigEndian.Uint32(hdr[4:])
+			dat := make([]byte, count)
+			_, err = reader.Read(dat)
+			logWriter.Write(dat)
 		}
-		count := binary.BigEndian.Uint32(hdr[4:])
-		dat := make([]byte, count)
-		_, err = reader.Read(dat)
-		logWriter.Write(dat)
 	}
 
 	err = cli.ContainerRemove(*ctx, containerID, types.ContainerRemoveOptions{})
