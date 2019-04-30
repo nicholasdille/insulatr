@@ -125,6 +125,7 @@ The `services` node defines a list of services required by the build steps. The 
 - `name` (mandatory) contains the given name for a repository.
 - `image` (mandatory) specifies the image to run the services with.
 - `environment` (optional) defines the environment variables required to configure the service.
+- `suppress_log` (optional) specifies whether the logs will be displayed when the service is stopped.
 - `privileged` (optional) specifies whether the container will be privileged. It defaults to `false`.
 
 A typical service definition looks like this:
@@ -159,6 +160,19 @@ steps:
     commands:
       - printenv
 ```
+
+If environment variables are specified without a value, the value is taken from an existing environment variable available to `insulatr`. Consider the following build definition:
+
+```yaml
+steps:
+  - name: build
+    environment:
+      - FOO
+    commands:
+      - printenv
+```
+
+When it is executed using `FOO=bar insulatr`, the build step received the environment variable `FOO` with the value `bar` from the environment of `insulatr`.
 
 ### Example
 
