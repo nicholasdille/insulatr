@@ -298,22 +298,24 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				step.Shell = build.Settings.Shell
 			}
 
-			for _, envVarDef := range step.Environment {
+			for index, envVarDef := range step.Environment {
 				if !strings.Contains(envVarDef, "=") {
 					FoundMatch := false
 					for _, envVar := range os.Environ() {
 						pair := strings.Split(envVar, "=")
 						if pair[0] == envVarDef {
-							envVarDef = envVar
+							step.Environment[index] = envVar
 							FoundMatch = true
 						}
 					}
 					if !FoundMatch {
 						fmt.Printf("Error: Unable to find match for environment variable %s\n", envVarDef)
 						FailedBuild = true
-						//
 					}
 				}
+			}
+			if FailedBuild {
+				break
 			}
 
 			err := runForegroundContainer(
