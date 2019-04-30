@@ -1,5 +1,5 @@
-hash: 983aa930a311edcbefefc18f87b0a2d84346eea8e87fb6be82e6d39ed03daa72
-updated: 2019-04-29T09:19:42.5478368+02:00
+hash: 404aaa7f42bf18fa62214588e7fa4a4193ec21895d90400235949f429daa7cce
+updated: 2019-04-30T16:16:08.8617008+02:00
 imports:
 - name: github.com/Bowery/prompt
   version: 972d0ceb96f55132a1ba9714cb771ce19b3821ab
