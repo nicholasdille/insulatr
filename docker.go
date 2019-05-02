@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/docker/cli/cli/command"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
@@ -13,7 +14,11 @@ import (
 	dockernetwork "github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/archive"
+	"github.com/docker/docker/pkg/system"
 	"io"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -84,7 +89,7 @@ func createNetwork(ctx *context.Context, cli *client.Client, name string, driver
 	return network.ID, nil
 }
 
-func runForegroundContainer(ctx *context.Context, cli *client.Client, image string, shell []string, commands []string, user string, environment []string, dir string, network string, volume string, overrideEntrypoint bool, mountDockerSock bool, logWriter io.Writer) error {
+func runForegroundContainer(ctx *context.Context, cli *client.Client, image string, shell []string, commands []string, user string, environment []string, dir string, network string, volume string, overrideEntrypoint bool, mountDockerSock bool, logWriter io.Writer, files []string) error {
 	// pull image
 	_, err := cli.ImagePull(*ctx, image, types.ImagePullOptions{})
 	if err != nil {
@@ -142,6 +147,63 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 		return err
 	}
 	ContainerID := resp.ID
+
+	for _, srcPath := range files {
+		dstPath := "/src"
+		pos := strings.LastIndex(srcPath, "/")
+		if pos > -1 {
+			dstPath = dstPath + "/" + srcPath[0:pos]
+		}
+		absPath, err := filepath.Abs(dstPath)
+		if err != nil {
+			return err
+		}
+		dstPath = archive.PreserveTrailingDotOrSeparator(absPath, dstPath, filepath.Separator)
+		dstInfo := archive.CopyInfo{Path: dstPath}
+		dstStat, err := cli.ContainerStatPath(*ctx, ContainerID, dstPath)
+		if err != nil {
+			return err
+		} else {
+			if dstStat.Mode&os.ModeSymlink != 0 {
+				linkTarget := dstStat.LinkTarget
+				if !system.IsAbs(linkTarget) {
+					dstParent, _ := archive.SplitPathDirEntry(dstPath)
+					linkTarget = filepath.Join(dstParent, linkTarget)
+				}
+
+				dstInfo.Path = linkTarget
+				dstStat, err = cli.ContainerStatPath(*ctx, ContainerID, linkTarget)
+			}
+		}
+		if err := command.ValidateOutputPathFileMode(dstStat.Mode); err != nil {
+			return errors.New("Destination must be a directory regular file")
+		}
+		if err == nil {
+			dstInfo.Exists, dstInfo.IsDir = true, dstStat.Mode.IsDir()
+		}
+		var content io.Reader
+		srcInfo, err := archive.CopyInfoSourcePath(srcPath, true)
+		if err != nil {
+			return err
+		}
+		srcArchive, err := archive.TarResource(srcInfo)
+		if err != nil {
+			return err
+		}
+		defer srcArchive.Close()
+		dstDir, preparedArchive, err := archive.PrepareArchiveCopy(srcArchive, srcInfo, dstInfo)
+		if err != nil {
+			return err
+		}
+		defer preparedArchive.Close()
+		content = preparedArchive
+		err = cli.CopyToContainer(*ctx, ContainerID, dstDir, content, types.CopyToContainerOptions{
+			AllowOverwriteDirWithFile: false,
+		})
+		if err != nil {
+			return err
+		}
+	}
 
 	// Attach
 	AttachResp, err := cli.ContainerAttach(*ctx, ContainerID, types.ContainerAttachOptions{

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -51,6 +52,7 @@ type Step struct {
 	Commands           []string `yaml:"commands"`
 	Environment        []string `yaml:"environment"`
 	MountDockerSock    bool     `yaml:"mount_docker_sock"`
+	Files              []string `yaml:"files"`
 }
 
 // Build is used to import from YaML
@@ -226,6 +228,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				false,
 				false,
 				os.Stdout,
+				[]string{},
 			)
 			if err != nil {
 				fmt.Println(err)
@@ -247,6 +250,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 					false,
 					false,
 					os.Stdout,
+					[]string{},
 				)
 				if err != nil {
 					fmt.Println(err)
@@ -267,6 +271,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 					false,
 					false,
 					os.Stdout,
+					[]string{},
 				)
 				if err != nil {
 					fmt.Println(err)
@@ -318,6 +323,21 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				break
 			}
 
+			files := []string{}
+			for _, file := range step.Files {
+				matches, err := filepath.Glob(file)
+				if err != nil {
+					fmt.Printf("Error: Unable to glob file %s\n", file)
+					FailedBuild = true
+				}
+				for _, match := range matches {
+					files = append(files, match)
+				}
+			}
+			if FailedBuild {
+				break
+			}
+
 			err := runForegroundContainer(
 				&ctxTimeout,
 				cli,
@@ -332,6 +352,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				step.OverrideEntrypoint,
 				step.MountDockerSock,
 				os.Stdout,
+				files,
 			)
 			if err != nil {
 				fmt.Println(err)
