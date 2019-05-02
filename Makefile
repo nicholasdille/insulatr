@@ -75,8 +75,7 @@ run: docker ; $(info $(M) Running $(PACKAGE)...)
 	@docker run -it --rm --volume /var/run/docker.sock:/var/run/docker.sock $(PACKAGE) --remove-volume --remove-network
 
 scp-%: binary ; $(info $(M) Copying to $*)
-	@scp bin/$(PACKAGE) $*:~/
-	@scp insulatr.yaml $*:~/
+	@cat bin/$(PACKAGE) | gzip | ssh $* sh -c 'gunzip > $(PACKAGE)'
 
 ssh-%: scp-% ; $(info $(M) Running remotely on $*)
 	@ssh $* ./$(PACKAGE)
