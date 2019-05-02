@@ -74,12 +74,12 @@ test: docker ; $(info $(M) Building container image for testing...)
 run: docker ; $(info $(M) Running $(PACKAGE)...)
 	@docker run -it --rm --volume /var/run/docker.sock:/var/run/docker.sock $(PACKAGE) --remove-volume --remove-network
 
-scp-%: static ; $(info $(M) Copying to $*)
-	@scp bin/$(STATIC) $*:~/
+scp-%: binary ; $(info $(M) Copying to $*)
+	@scp bin/$(PACKAGE) $*:~/
 	@scp insulatr.yaml $*:~/
 
 ssh-%: scp-% ; $(info $(M) Running remotely on $*)
-	@ssh $* ./$(STATIC)
+	@ssh $* ./$(PACKAGE)
 
 tag-%: ; $(info $(M) Tagging as $*)
 	@hub tag $*
