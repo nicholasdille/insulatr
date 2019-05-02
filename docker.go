@@ -89,11 +89,13 @@ func createNetwork(ctx *context.Context, cli *client.Client, name string, driver
 	return network.ID, nil
 }
 
-func runForegroundContainer(ctx *context.Context, cli *client.Client, image string, shell []string, commands []string, user string, environment []string, dir string, network string, volume string, overrideEntrypoint bool, mountDockerSock bool, logWriter io.Writer, files []string) error {
+func runForegroundContainer(ctx *context.Context, cli *client.Client, image string, shell []string, commands []string, user string, environment []string, dir string, network string, volume string, overrideEntrypoint bool, mountDockerSock bool, logWriter io.Writer, files []string) (err error) {
+	Failed := false
+
 	// pull image
-	_, err := cli.ImagePull(*ctx, image, types.ImagePullOptions{})
+	_, err = cli.ImagePull(*ctx, image, types.ImagePullOptions{})
 	if err != nil {
-		return err
+		return
 	}
 
 	// create container
@@ -144,7 +146,7 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 		"",
 	)
 	if err != nil {
-		return err
+		return
 	}
 	ContainerID := resp.ID
 
@@ -156,13 +158,15 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 		}
 		absPath, err := filepath.Abs(dstPath)
 		if err != nil {
-			return err
+			Failed = true
+			break
 		}
 		dstPath = archive.PreserveTrailingDotOrSeparator(absPath, dstPath, filepath.Separator)
 		dstInfo := archive.CopyInfo{Path: dstPath}
 		dstStat, err := cli.ContainerStatPath(*ctx, ContainerID, dstPath)
 		if err != nil {
-			return err
+			Failed = true
+			break
 		} else {
 			if dstStat.Mode&os.ModeSymlink != 0 {
 				linkTarget := dstStat.LinkTarget
@@ -175,8 +179,10 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 				dstStat, err = cli.ContainerStatPath(*ctx, ContainerID, linkTarget)
 			}
 		}
-		if err := command.ValidateOutputPathFileMode(dstStat.Mode); err != nil {
-			return errors.New("Destination must be a directory regular file")
+		if err = command.ValidateOutputPathFileMode(dstStat.Mode); err != nil {
+			err = errors.New("Destination must be a directory regular file")
+			Failed = true
+			break
 		}
 		if err == nil {
 			dstInfo.Exists, dstInfo.IsDir = true, dstStat.Mode.IsDir()
@@ -184,16 +190,19 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 		var content io.Reader
 		srcInfo, err := archive.CopyInfoSourcePath(srcPath, true)
 		if err != nil {
-			return err
+			Failed = true
+			break
 		}
 		srcArchive, err := archive.TarResource(srcInfo)
 		if err != nil {
-			return err
+			Failed = true
+			break
 		}
 		defer srcArchive.Close()
 		dstDir, preparedArchive, err := archive.PrepareArchiveCopy(srcArchive, srcInfo, dstInfo)
 		if err != nil {
-			return err
+			Failed = true
+			break
 		}
 		defer preparedArchive.Close()
 		content = preparedArchive
@@ -201,80 +210,96 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 			AllowOverwriteDirWithFile: false,
 		})
 		if err != nil {
-			return err
+			Failed = true
+			break
 		}
 	}
 
 	// Attach
-	AttachResp, err := cli.ContainerAttach(*ctx, ContainerID, types.ContainerAttachOptions{
-		Stream: true,
-		Stdin:  true,
-	})
-	if err != nil {
-		return err
+	var AttachResp types.HijackedResponse
+	if !Failed {
+		AttachResp, err = cli.ContainerAttach(*ctx, ContainerID, types.ContainerAttachOptions{
+			Stream: true,
+			Stdin:  true,
+		})
+		if err != nil {
+			Failed = true
+		}
+		defer AttachResp.Close()
 	}
-	defer AttachResp.Close()
 
 	// Start container
-	if err := cli.ContainerStart(*ctx, ContainerID, types.ContainerStartOptions{}); err != nil {
-		return err
+	if !Failed {
+		if err = cli.ContainerStart(*ctx, ContainerID, types.ContainerStartOptions{}); err != nil {
+			Failed = true
+		}
 	}
 
 	// Send commands
-	_, err = io.Copy(AttachResp.Conn, bytes.NewBufferString(strings.Join(commands, "\n")))
-	AttachResp.CloseWrite()
-	if err != nil {
-		return err
+	if !Failed {
+		_, err = io.Copy(AttachResp.Conn, bytes.NewBufferString(strings.Join(commands, "\n")))
+		AttachResp.CloseWrite()
+		if err != nil {
+			Failed = true
+		}
 	}
 
 	// Retrieve output
-	reader, err := cli.ContainerLogs(*ctx, ContainerID, types.ContainerLogsOptions{
-		ShowStdout: true,
-		ShowStderr: true,
-		Follow:     true,
-	})
-	go func() {
-		hdr := make([]byte, 8)
-		for {
-			_, err := reader.Read(hdr)
-			if err != nil {
-				return
-			}
-			count := binary.BigEndian.Uint32(hdr[4:])
-			dat := make([]byte, count)
-			_, err = reader.Read(dat)
-			logWriter.Write(dat)
+	if !Failed {
+		reader, err := cli.ContainerLogs(*ctx, ContainerID, types.ContainerLogsOptions{
+			ShowStdout: true,
+			ShowStderr: true,
+			Follow:     true,
+		})
+		if err != nil {
+			Failed = true
+		} else {
+			go func() {
+				hdr := make([]byte, 8)
+				for {
+					_, err := reader.Read(hdr)
+					if err != nil {
+						return
+					}
+					count := binary.BigEndian.Uint32(hdr[4:])
+					dat := make([]byte, count)
+					_, err = reader.Read(dat)
+					logWriter.Write(dat)
+				}
+			}()
 		}
-	}()
+	}
 
 	// Wait
-	statusCh, errCh := cli.ContainerWait(*ctx, ContainerID, container.WaitConditionNotRunning)
 	var status container.ContainerWaitOKBody
-	select {
-	// Waits for timeout
-	case <-(*ctx).Done():
-		return (*ctx).Err()
-		// Waits for error
-	case err := <-errCh:
-		if err != nil {
-			return err
+	if !Failed {
+		statusCh, errCh := cli.ContainerWait(*ctx, ContainerID, container.WaitConditionNotRunning)
+		select {
+		// Waits for timeout
+		case <-(*ctx).Done():
+			err = (*ctx).Err()
+			// Waits for error
+		case err := <-errCh:
+			if err != nil {
+				Failed = true
+			}
+		// Waits for status code
+		case status = <-statusCh:
 		}
-	// Waits for status code
-	case status = <-statusCh:
+	}
+
+	// Check return code
+	if status.StatusCode > 0 {
+		err = errors.New("Return code not zero (" + strconv.FormatInt(status.StatusCode, 10) + ")")
 	}
 
 	// Remove container
 	err = cli.ContainerRemove(*ctx, ContainerID, types.ContainerRemoveOptions{})
 	if err != nil {
-		return err
+		return
 	}
 
-	// Check return code
-	if status.StatusCode > 0 {
-		return errors.New("Return code not zero (" + strconv.FormatInt(status.StatusCode, 10) + ")")
-	}
-
-	return nil
+	return
 }
 
 func runBackgroundContainer(ctx *context.Context, cli *client.Client, image string, environment []string, network string, name string, privileged bool) (string, error) {
