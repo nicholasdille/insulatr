@@ -78,7 +78,7 @@ scp-%: static ; $(info $(M) Copying to $*)
 	@scp bin/$(STATIC) $*:~/
 	@scp insulatr.yaml $*:~/
 
-ssh-%: scp-$* ; $(info $(M) Running remotely on $*)
+ssh-%: scp-% ; $(info $(M) Running remotely on $*)
 	@ssh $* ./$(STATIC)
 
 tag-%: ; $(info $(M) Tagging as $*)
@@ -91,5 +91,5 @@ changelog-%: ; $(info $(M) Creating changelog for milestone $* on $(GIT_TAG))
 	    hub issue -M $* -s closed -f "[%t](%U)%n" | while read LINE; do echo "- $$LINE"; done; \
 	) > $(GIT_TAG).txt
 
-release-%: static changelog-$* ; $(info $(M) Releasing milestone $* as $(GIT_TAG))
+release-%: static changelog-% ; $(info $(M) Releasing milestone $* as $(GIT_TAG))
 	@hub release create -F $(GIT_TAG).txt -a bin/$(STATIC) -a bin/$(STATIC).sha256 $(GIT_TAG)
