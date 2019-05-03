@@ -147,7 +147,12 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 		for _, file := range build.Files.Inject {
 			matches, err := filepath.Glob(file)
 			if err != nil {
-				fmt.Printf("Error: Unable to glob file %s\n", file)
+				fmt.Printf("Error: Unable to glob file <%s>\n", file)
+				FailedBuild = true
+				break
+			}
+			if len(matches) == 0 {
+				fmt.Printf("Error: No file matches glob <%s>\n", file)
 				FailedBuild = true
 				break
 			}
