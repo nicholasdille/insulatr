@@ -89,6 +89,80 @@ func createNetwork(ctx *context.Context, cli *client.Client, name string, driver
 	return network.ID, nil
 }
 
+func copyFilestoContainer(ctx *context.Context, cli *client.Client, id string, files []string) (err error) {
+	for _, srcPath := range files {
+		dstPath := "/src"
+		pos := strings.LastIndex(srcPath, "/")
+		if pos > -1 {
+			dstPath = dstPath + "/" + srcPath[0:pos]
+		}
+
+		var absPath string
+		absPath, err = filepath.Abs(dstPath)
+		if err != nil {
+			return
+		}
+
+		var dstInfo archive.CopyInfo
+		var dstStat types.ContainerPathStat
+		dstPath = archive.PreserveTrailingDotOrSeparator(absPath, dstPath, filepath.Separator)
+		dstInfo = archive.CopyInfo{Path: dstPath}
+		dstStat, err = cli.ContainerStatPath(*ctx, id, dstPath)
+		if err != nil {
+			return
+		} else {
+			if dstStat.Mode&os.ModeSymlink != 0 {
+				linkTarget := dstStat.LinkTarget
+				if !system.IsAbs(linkTarget) {
+					dstParent, _ := archive.SplitPathDirEntry(dstPath)
+					linkTarget = filepath.Join(dstParent, linkTarget)
+				}
+
+				dstInfo.Path = linkTarget
+				dstStat, err = cli.ContainerStatPath(*ctx, id, linkTarget)
+			}
+		}
+
+		err = command.ValidateOutputPathFileMode(dstStat.Mode)
+		if err != nil {
+			err = errors.New("Destination must be a directory regular file")
+			return
+		} else {
+			dstInfo.Exists, dstInfo.IsDir = true, dstStat.Mode.IsDir()
+		}
+
+		var srcInfo archive.CopyInfo
+		srcInfo, err = archive.CopyInfoSourcePath(srcPath, true)
+		if err != nil {
+			return
+		}
+
+		var srcArchive io.ReadCloser
+		srcArchive, err = archive.TarResource(srcInfo)
+		if err != nil {
+			return
+		}
+		defer srcArchive.Close()
+
+		var dstDir string
+		var preparedArchive io.ReadCloser
+		dstDir, preparedArchive, err = archive.PrepareArchiveCopy(srcArchive, srcInfo, dstInfo)
+		if err != nil {
+			return
+		}
+		defer preparedArchive.Close()
+
+		err = cli.CopyToContainer(*ctx, id, dstDir, preparedArchive, types.CopyToContainerOptions{
+			AllowOverwriteDirWithFile: false,
+		})
+		if err != nil {
+			return
+		}
+	}
+
+	return
+}
+
 func runForegroundContainer(ctx *context.Context, cli *client.Client, image string, shell []string, commands []string, user string, environment []string, dir string, network string, volume string, overrideEntrypoint bool, mountDockerSock bool, logWriter io.Writer, files []string) (err error) {
 	Failed := false
 
@@ -150,69 +224,9 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 	}
 	ContainerID := resp.ID
 
-	for _, srcPath := range files {
-		dstPath := "/src"
-		pos := strings.LastIndex(srcPath, "/")
-		if pos > -1 {
-			dstPath = dstPath + "/" + srcPath[0:pos]
-		}
-		absPath, err := filepath.Abs(dstPath)
-		if err != nil {
-			Failed = true
-			break
-		}
-		dstPath = archive.PreserveTrailingDotOrSeparator(absPath, dstPath, filepath.Separator)
-		dstInfo := archive.CopyInfo{Path: dstPath}
-		dstStat, err := cli.ContainerStatPath(*ctx, ContainerID, dstPath)
-		if err != nil {
-			Failed = true
-			break
-		} else {
-			if dstStat.Mode&os.ModeSymlink != 0 {
-				linkTarget := dstStat.LinkTarget
-				if !system.IsAbs(linkTarget) {
-					dstParent, _ := archive.SplitPathDirEntry(dstPath)
-					linkTarget = filepath.Join(dstParent, linkTarget)
-				}
-
-				dstInfo.Path = linkTarget
-				dstStat, err = cli.ContainerStatPath(*ctx, ContainerID, linkTarget)
-			}
-		}
-		if err = command.ValidateOutputPathFileMode(dstStat.Mode); err != nil {
-			err = errors.New("Destination must be a directory regular file")
-			Failed = true
-			break
-		}
-		if err == nil {
-			dstInfo.Exists, dstInfo.IsDir = true, dstStat.Mode.IsDir()
-		}
-		var content io.Reader
-		srcInfo, err := archive.CopyInfoSourcePath(srcPath, true)
-		if err != nil {
-			Failed = true
-			break
-		}
-		srcArchive, err := archive.TarResource(srcInfo)
-		if err != nil {
-			Failed = true
-			break
-		}
-		defer srcArchive.Close()
-		dstDir, preparedArchive, err := archive.PrepareArchiveCopy(srcArchive, srcInfo, dstInfo)
-		if err != nil {
-			Failed = true
-			break
-		}
-		defer preparedArchive.Close()
-		content = preparedArchive
-		err = cli.CopyToContainer(*ctx, ContainerID, dstDir, content, types.CopyToContainerOptions{
-			AllowOverwriteDirWithFile: false,
-		})
-		if err != nil {
-			Failed = true
-			break
-		}
+	err = copyFilestoContainer(ctx, cli, ContainerID, files)
+	if err != nil {
+		Failed = true
 	}
 
 	// Attach
