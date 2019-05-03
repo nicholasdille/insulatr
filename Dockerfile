@@ -1,4 +1,4 @@
-FROM golang:1.11
+FROM golang:1.11 as builder
 RUN curl https://glide.sh/get | sh \
  && git clone https://github.com/nicholasdille/insulatr /go/src/github.com/nicholasdille/insulatr \
  && cd /go/src/github.com/nicholasdille/insulatr \
