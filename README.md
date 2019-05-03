@@ -118,6 +118,21 @@ repos:
     location: https://github.com/nicholasdille/insulatr
 ```
 
+### Files
+
+The `files` node defines a list of files to be injected into the volume before running the build steps. A typical definitions looks like this:
+
+```yaml
+files:
+  inject:
+    - Makefile
+    - *.jar
+```
+
+The only supported wildcard is `*`.
+
+Please note that the target direction must exist. If that is not possible, add a tarball and unpack it in a build step.
+
 ### Services
 
 The `services` node defines a list of services required by the build steps. The are started in order before build steps are executed. The following fields are supported per service:
