@@ -42,6 +42,11 @@ type Service struct {
 	Privileged  bool     `yaml:"privileged"`
 }
 
+// Files is used to import from YaML
+type Files struct {
+	Inject  []string `yaml:"inject"`
+}
+
 // Step is used to import from YaML
 type Step struct {
 	Name               string   `yaml:"name"`
@@ -52,13 +57,13 @@ type Step struct {
 	Commands           []string `yaml:"commands"`
 	Environment        []string `yaml:"environment"`
 	MountDockerSock    bool     `yaml:"mount_docker_sock"`
-	Files              []string `yaml:"files"`
 }
 
 // Build is used to import from YaML
 type Build struct {
 	Settings     Settings     `yaml:"settings"`
 	Repositories []Repository `yaml:"repos"`
+	Files        Files        `yaml:"files"`
 	Services     []Service    `yaml:"services"`
 	Environment  []string     `yaml:"environment"`
 	Steps        []Step       `yaml:"steps"`
@@ -136,39 +141,40 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 		fmt.Printf("%s\n\n", newNetworkID)
 	}
 
-	services := make(map[string]string)
 	if !FailedBuild {
-		fmt.Printf("########## Starting services\n")
-		for index, service := range build.Services {
-			if service.Name == "" {
-				fmt.Printf("Error: Service %d is missing a name.\n", index)
-				FailedBuild = true
-				break
-			}
-
-			fmt.Printf("=== Starting service %s\n", service.Name)
-
-			if service.Image == "" {
-				fmt.Printf("Error: Service %s is missing an image.\n", service.Name)
-				FailedBuild = true
-				break
-			}
-
-			containerID, err := runBackgroundContainer(
-				&ctxTimeout,
-				cli,
-				service.Image,
-				service.Environment,
-				build.Settings.NetworkName,
-				service.Name,
-				service.Privileged,
-			)
+		fmt.Printf("########## Injecting files\n")
+		files := []string{}
+		for _, file := range build.Files.Inject {
+			matches, err := filepath.Glob(file)
 			if err != nil {
-				fmt.Println(err)
+				fmt.Printf("Error: Unable to glob file %s\n", file)
 				FailedBuild = true
 				break
 			}
-			services[service.Name] = containerID
+			for _, match := range matches {
+				files = append(files, match)
+			}
+		}
+
+		err := runForegroundContainer(
+			&ctxTimeout,
+			cli,
+			"alpine",
+			[]string{"sh"},
+			[]string{},
+			"",
+			[]string{},
+			"/src",
+			"",
+			build.Settings.VolumeName,
+			false,
+			false,
+			os.Stdout,
+			files,
+		)
+		if err != nil {
+			fmt.Println(err)
+			FailedBuild = true
 		}
 		fmt.Printf("\n")
 	}
@@ -282,6 +288,43 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 		fmt.Printf("\n")
 	}
 
+	services := make(map[string]string)
+	if !FailedBuild {
+		fmt.Printf("########## Starting services\n")
+		for index, service := range build.Services {
+			if service.Name == "" {
+				fmt.Printf("Error: Service %d is missing a name.\n", index)
+				FailedBuild = true
+				break
+			}
+
+			fmt.Printf("=== Starting service %s\n", service.Name)
+
+			if service.Image == "" {
+				fmt.Printf("Error: Service %s is missing an image.\n", service.Name)
+				FailedBuild = true
+				break
+			}
+
+			containerID, err := runBackgroundContainer(
+				&ctxTimeout,
+				cli,
+				service.Image,
+				service.Environment,
+				build.Settings.NetworkName,
+				service.Name,
+				service.Privileged,
+			)
+			if err != nil {
+				fmt.Println(err)
+				FailedBuild = true
+				break
+			}
+			services[service.Name] = containerID
+		}
+		fmt.Printf("\n")
+	}
+
 	if !FailedBuild {
 		fmt.Printf("########## Running build steps\n")
 		for index, step := range build.Steps {
@@ -323,21 +366,6 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				break
 			}
 
-			files := []string{}
-			for _, file := range step.Files {
-				matches, err := filepath.Glob(file)
-				if err != nil {
-					fmt.Printf("Error: Unable to glob file %s\n", file)
-					FailedBuild = true
-				}
-				for _, match := range matches {
-					files = append(files, match)
-				}
-			}
-			if FailedBuild {
-				break
-			}
-
 			err := runForegroundContainer(
 				&ctxTimeout,
 				cli,
@@ -352,7 +380,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				step.OverrideEntrypoint,
 				step.MountDockerSock,
 				os.Stdout,
-				files,
+				[]string{},
 			)
 			if err != nil {
 				fmt.Println(err)
