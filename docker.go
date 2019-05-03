@@ -294,8 +294,8 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 	}
 
 	// Remove container
-	err = cli.ContainerRemove(*ctx, ContainerID, types.ContainerRemoveOptions{})
-	if err != nil {
+	err2 := cli.ContainerRemove(*ctx, ContainerID, types.ContainerRemoveOptions{})
+	if err2 != nil {
 		return
 	}
 
