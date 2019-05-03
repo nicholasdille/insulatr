@@ -12,6 +12,11 @@ Based on a YAML file, `insulatr` isolates build steps in individual containers w
     1. [Docker image](#docker-image)
     1. [Alias](#alias)
 1. [Build definitions](#build-definitions)
+    1. [Settings](#settings)
+    1. [Repositories](#repositories)
+    1. [Files](#files)
+    1. [Services](#services)
+    1. [Build Steps](#build-steps)
 1. [Building](#building)
 1. [Design](#design)
 1. [Useful links](#useful-links)
@@ -71,7 +76,13 @@ alias insulatr="echo -e 'FROM nicholasdille/insulatr\nADD insulatr.yaml /' | doc
 
 ## Build definitions
 
-`insulatr` requires a build definition written in YAML.
+`insulatr` requires a build definition written in YAML with the following sections:
+
+1. [Settings](#settings)
+1. [Repositories](#repositories)
+1. [Files](#files)
+1. [Services](#services)
+1. [Build Steps](#build-steps)
 
 ### Settings
 
