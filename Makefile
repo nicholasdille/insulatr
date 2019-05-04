@@ -1,13 +1,14 @@
-PACKAGE = insulatr
-STATIC  = insulatr-$(shell uname -m)
-SOURCE  = $(shell echo *.go)
-GOPATH  = $(CURDIR)/.gopath
-BIN     = $(GOPATH)/bin
-BASE    = $(GOPATH)/src/$(PACKAGE)
-GO      = go
-GOLINT  = $(BIN)/golint
-GOFMT   = gofmt
-GLIDE   = glide
+PACKAGE  = insulatr
+STATIC   = insulatr-$(shell uname -m)
+SOURCE   = $(shell echo *.go)
+GOPATH   = $(CURDIR)/.gopath
+BIN      = $(GOPATH)/bin
+BASE     = $(GOPATH)/src/$(PACKAGE)
+GO       = go
+GOLINT   = $(BIN)/golint
+GOFMT    = gofmt
+GLIDE    = glide
+BUILDDEF = insulatr.yaml
 
 GIT_COMMIT = $(shell git rev-list -1 HEAD)
 BUILD_TIME = $(shell date +%Y%m%d-%H%M%S)
@@ -78,7 +79,7 @@ scp-%: binary ; $(info $(M) Copying to $*)
 	@cat bin/$(PACKAGE) | gzip | ssh $* sh -c 'gunzip > $(PACKAGE)'
 
 ssh-%: scp-% ; $(info $(M) Running remotely on $*)
-	@ssh $* ./$(PACKAGE)
+	@ssh $* ./$(PACKAGE) --file $(BUILDDEF)
 
 tag-%: ; $(info $(M) Tagging as $*)
 	@hub tag $*
