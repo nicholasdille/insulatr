@@ -123,12 +123,12 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 
 	if !mustReuseVolume {
 		fmt.Printf("########## Create volume\n")
-		newVolumeName, err := createVolume(&ctxTimeout, cli, build.Settings.VolumeName, build.Settings.VolumeDriver)
+		err := createVolume(&ctxTimeout, cli, build.Settings.VolumeName, build.Settings.VolumeDriver)
 		if err != nil {
 			fmt.Println(err)
 			FailedBuild = true
 		}
-		fmt.Printf("%s\n\n", newVolumeName)
+		fmt.Printf("%s\n\n", build.Settings.VolumeName)
 	}
 
 	if !FailedBuild && !mustReuseNetwork {

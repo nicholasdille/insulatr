@@ -12,7 +12,7 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/mount"
 	dockernetwork "github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/api/types/volume"
+	dockervolume "github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/system"
@@ -32,61 +32,62 @@ func createDockerClient(ctx *context.Context) (*client.Client, error) {
 	return cli, nil
 }
 
-func removeVolume(ctx *context.Context, cli *client.Client, name string) error {
-	result, err := cli.VolumeList(*ctx, filters.NewArgs())
+func removeVolume(ctx *context.Context, cli *client.Client, name string) (err error) {
+	var result dockervolume.VolumeListOKBody
+	result, err = cli.VolumeList(*ctx, filters.NewArgs())
 	if err != nil {
-		return err
+		return
 	}
 	for _, volume := range result.Volumes {
 		if volume.Name == name {
 			err = cli.VolumeRemove(*ctx, volume.Name, false)
 			if err != nil {
-				return err
+				return
 			}
 		}
 	}
 	return nil
 }
 
-func removeNetwork(ctx *context.Context, cli *client.Client, name string) error {
-	networks, err := cli.NetworkList(*ctx, types.NetworkListOptions{
+func removeNetwork(ctx *context.Context, cli *client.Client, name string) (err error) {
+	var networks []types.NetworkResource
+	networks, err = cli.NetworkList(*ctx, types.NetworkListOptions{
 		Filters: filters.NewArgs(),
 	})
 	if err != nil {
-		return err
+		return
 	}
 	for _, network := range networks {
 		if network.Name == name {
 			err = cli.NetworkRemove(*ctx, network.Name)
 			if err != nil {
-				return err
+				return
 			}
 		}
 	}
 	return nil
 }
 
-func createVolume(ctx *context.Context, cli *client.Client, name string, driverName string) (string, error) {
-	volume, err := cli.VolumeCreate(*ctx, volume.VolumeCreateBody{
+func createVolume(ctx *context.Context, cli *client.Client, name string, driverName string) (err error) {
+	_, err = cli.VolumeCreate(*ctx, dockervolume.VolumeCreateBody{
 		Name:   name,
 		Driver: driverName,
 	})
-	if err != nil {
-		return "", err
-	}
 
-	return volume.Name, nil
+	return
 }
 
-func createNetwork(ctx *context.Context, cli *client.Client, name string, driverName string) (string, error) {
-	network, err := cli.NetworkCreate(*ctx, name, types.NetworkCreate{
+func createNetwork(ctx *context.Context, cli *client.Client, name string, driverName string) (id string, err error) {
+	var network types.NetworkCreateResponse
+	network, err = cli.NetworkCreate(*ctx, name, types.NetworkCreate{
 		Driver: driverName,
 	})
 	if err != nil {
-		return "", err
+		return
 	}
+	id = network.ID
 
-	return network.ID, nil
+	return
 }
 
 func copyFilestoContainer(ctx *context.Context, cli *client.Client, id string, files []string) (err error) {
@@ -316,11 +317,11 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 	return
 }
 
-func runBackgroundContainer(ctx *context.Context, cli *client.Client, image string, environment []string, network string, name string, privileged bool) (string, error) {
+func runBackgroundContainer(ctx *context.Context, cli *client.Client, image string, environment []string, network string, name string, privileged bool) (id string, err error) {
 	// pull image
-	_, err := cli.ImagePull(*ctx, image, types.ImagePullOptions{})
+	_, err = cli.ImagePull(*ctx, image, types.ImagePullOptions{})
 	if err != nil {
-		return "", err
+		return
 	}
 
 	// create container
@@ -333,7 +334,8 @@ func runBackgroundContainer(ctx *context.Context, cli *client.Client, image stri
 	if len(network) > 0 {
 		endpoints[network] = &dockernetwork.EndpointSettings{}
 	}
-	resp, err := cli.ContainerCreate(
+	var resp container.ContainerCreateCreatedBody
+	resp, err = cli.ContainerCreate(
 		*ctx,
 		&container.Config{
 			Image: image,
@@ -346,41 +348,42 @@ func runBackgroundContainer(ctx *context.Context, cli *client.Client, image stri
 		name,
 	)
 	if err != nil {
-		return "", err
+		return
 	}
-	ContainerID := resp.ID
-	fmt.Printf("%s\n", ContainerID)
+	id = resp.ID
+	fmt.Printf("%s\n", id)
 
 	// Start container
-	if err := cli.ContainerStart(*ctx, ContainerID, types.ContainerStartOptions{}); err != nil {
-		return ContainerID, err
+	if err = cli.ContainerStart(*ctx, id, types.ContainerStartOptions{}); err != nil {
+		return
 	}
 
-	return ContainerID, err
+	return
 }
 
-func stopAndRemoveContainer(ctx *context.Context, cli *client.Client, containerID string, logWriter io.Writer) error {
-	err := cli.ContainerStop(*ctx, containerID, nil)
+func stopAndRemoveContainer(ctx *context.Context, cli *client.Client, containerID string, logWriter io.Writer) (err error) {
+	err = cli.ContainerStop(*ctx, containerID, nil)
 	if err != nil {
 		return err
 	}
 
-	reader, err := cli.ContainerLogs(*ctx, containerID, types.ContainerLogsOptions{
+	var reader io.ReadCloser
+	reader, err = cli.ContainerLogs(*ctx, containerID, types.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 	})
 	if err != nil {
-		return err
+		return
 	}
 	if logWriter != nil {
 		hdr := make([]byte, 8)
 		for {
-			_, err := reader.Read(hdr)
+			_, err = reader.Read(hdr)
 			if err != nil {
 				if err == io.EOF {
 					break
 				}
-				return err
+				return
 			}
 			count := binary.BigEndian.Uint32(hdr[4:])
 			dat := make([]byte, count)
@@ -391,7 +394,7 @@ func stopAndRemoveContainer(ctx *context.Context, cli *client.Client, containerI
 
 	err = cli.ContainerRemove(*ctx, containerID, types.ContainerRemoveOptions{})
 	if err != nil {
-		return err
+		return
 	}
 
 	return nil
