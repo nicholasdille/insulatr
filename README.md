@@ -142,7 +142,21 @@ files:
 
 The only supported wildcard is `*`.
 
-Please note that the target direction must exist. If that is not possible, add a tarball and unpack it in a build step.
+When adding a whole directory, the following works...
+
+```yaml
+files:
+  inject:
+    - go
+```
+
+... but the following does not (if `go/` does not exist in the volume)...
+
+```yaml
+files:
+  inject:
+    - go/*
+```
 
 ### Services
 
