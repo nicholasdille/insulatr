@@ -6,6 +6,7 @@ BIN      = $(GOPATH)/bin
 BASE     = $(GOPATH)/src/$(PACKAGE)
 GO       = go
 GOLINT   = $(BIN)/golint
+DEPTH    = $(BIN)/depth
 GOFMT    = gofmt
 GLIDE    = glide
 BUILDDEF = insulatr.yaml
@@ -31,14 +32,20 @@ $(BASE): ; $(info $(M) Creating link...)
 $(GOLINT): $(BASE) ; $(info $(M) Installing linter...)
 	@$(GO) get github.com/golang/lint/golint
 
+$(DEPTH): $(BASE) ; $(info $(M) Installing depth...)
+	@$(GO) get github.com/KyleBanks/depth/cmd/depth
+
 deps: $(BASE) ; $(info $(M) Updating dependencies...)
 	@$(GLIDE) update
 
 format: $(BASE) ; $(info $(M) Running formatter...)
 	@$(GOFMT) -l -w $(SOURCE)
 
-lint: $(BASE) $(GOLINT) ; $(info $(M) Running linter...)
+lint: $(GOLINT) ; $(info $(M) Running linter...)
 	@$(GOLINT) $(PACKAGE)
+
+deptree: $(DEPTH) ; $(info $(M) Creating dependency tree...)
+	@$(DEPTH) .
 
 check: format lint
 
