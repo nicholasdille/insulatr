@@ -232,7 +232,9 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				commands,
 				[]string{},
 				"",
-				[]string{},
+				[]string{
+                                        "GIT_SSH_COMMAND=ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no",
+                                },
 				build.Settings.WorkingDirectory,
 				"",
 				build.Settings.VolumeName,
