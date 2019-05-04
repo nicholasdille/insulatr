@@ -7,5 +7,5 @@ RUN curl https://glide.sh/get | sh \
  && ls -l bin
 
 FROM scratch
-COPY --from=builder /go/src/github.com/nicholasdille/insulatr/bin/insulatr-$(uname -m) /insulatr
+COPY --from=builder /go/src/github.com/nicholasdille/insulatr/bin/insulatr-x86_64 /insulatr
 ENTRYPOINT [ "/insulatr" ]
