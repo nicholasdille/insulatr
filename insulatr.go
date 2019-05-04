@@ -141,7 +141,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 		fmt.Printf("%s\n\n", newNetworkID)
 	}
 
-	if !FailedBuild {
+	if !FailedBuild && len(build.Files.Inject) > 0 {
 		fmt.Printf("########## Injecting files\n")
 		files := []string{}
 		for _, file := range build.Files.Inject {
@@ -184,7 +184,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 		fmt.Printf("\n")
 	}
 
-	if !FailedBuild {
+	if !FailedBuild && len(build.Repositories) > 0 {
 		fmt.Printf("########## Cloning repositories\n")
 		for index, repo := range build.Repositories {
 			if repo.Name == "" {
@@ -294,7 +294,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 	}
 
 	services := make(map[string]string)
-	if !FailedBuild {
+	if !FailedBuild && len(build.Services) > 0 {
 		fmt.Printf("########## Starting services\n")
 		for index, service := range build.Services {
 			if service.Name == "" {
@@ -330,7 +330,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 		fmt.Printf("\n")
 	}
 
-	if !FailedBuild {
+	if !FailedBuild && len(build.Steps) > 0 {
 		fmt.Printf("########## Running build steps\n")
 		for index, step := range build.Steps {
 			if step.Name == "" {
@@ -396,28 +396,30 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 		fmt.Printf("\n")
 	}
 
-	fmt.Printf("########## Stopping services\n")
-	for name, containerID := range services {
-		fmt.Printf("=== stopping service %s\n", name)
-		var logWriter io.Writer
-		logWriter = os.Stdout
-		var service Service
-		for _, service = range build.Services {
-			if service.Name == name {
-				break
+	if len(services) > 0 {
+		fmt.Printf("########## Stopping services\n")
+		for name, containerID := range services {
+			fmt.Printf("=== stopping service %s\n", name)
+			var logWriter io.Writer
+			logWriter = os.Stdout
+			var service Service
+			for _, service = range build.Services {
+				if service.Name == name {
+					break
+				}
 			}
+			if service.SuppressLog {
+				logWriter = nil
+			}
+			err := stopAndRemoveContainer(&ctx, cli, containerID, logWriter)
+			if err != nil {
+				fmt.Printf("Error stopping service %s with ID %s\n", name, containerID)
+				FailedBuild = true
+			}
+			delete(services, name)
 		}
-		if service.SuppressLog {
-			logWriter = nil
-		}
-		err := stopAndRemoveContainer(&ctx, cli, containerID, logWriter)
-		if err != nil {
-			fmt.Printf("Error stopping service %s with ID %s\n", name, containerID)
-			FailedBuild = true
-		}
-		delete(services, name)
+		fmt.Printf("\n")
 	}
-	fmt.Printf("\n")
 
 	if !mustReuseNetwork {
 		fmt.Printf("########## Removing network\n")
