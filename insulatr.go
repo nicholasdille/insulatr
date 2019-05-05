@@ -43,9 +43,11 @@ type Service struct {
 
 // File is used to import from YaML
 type File struct {
-	Inject  string `yaml:"inject"`
-	Create  string `yaml:"create"`
-	Content string `yaml:"content"`
+	Inject      string `yaml:"inject"`
+	Create      string `yaml:"create"`
+	Content     string `yaml:"content"`
+	Extract     string `yaml:"extract"`
+	Destination string
 }
 
 // Step is used to import from YaML
@@ -401,6 +403,41 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				break
 			}
 		}
+		fmt.Printf("\n")
+	}
+
+	if !FailedBuild && len(build.Files) > 0 {
+		fmt.Printf("########## Extracting files\n")
+
+		filesToExtract := []File{}
+		for _, file := range build.Files {
+			if len(file.Extract) > 0 {
+				file.Destination = "."
+				filesToExtract = append(filesToExtract, file)
+			}
+		}
+
+		err := runForegroundContainer(
+			&ctxTimeout,
+			cli,
+			"alpine",
+			[]string{"sh"},
+			[]string{},
+			"",
+			[]string{},
+			build.Settings.WorkingDirectory,
+			"",
+			build.Settings.VolumeName,
+			false,
+			false,
+			os.Stdout,
+			filesToExtract,
+		)
+		if err != nil {
+			fmt.Println(err)
+			FailedBuild = true
+		}
+
 		fmt.Printf("\n")
 	}
 

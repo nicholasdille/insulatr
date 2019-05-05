@@ -230,6 +230,77 @@ func copyFilesToContainer(ctx *context.Context, cli *client.Client, id string, f
 	return
 }
 
+func copyFilesFromContainer(ctx *context.Context, cli *client.Client, id string, files []File, dir string) (err error) {
+	for _, file := range files {
+		if len(file.Extract) > 0 {
+			srcPath := dir + "/" + file.Extract
+			dstPath := file.Destination
+
+			var absPath string
+			absPath, err = filepath.Abs(dstPath)
+			if err != nil {
+				return
+			}
+			dstPath = archive.PreserveTrailingDotOrSeparator(absPath, dstPath, filepath.Separator)
+			if err != nil {
+				return
+			}
+
+			err = command.ValidateOutputPath(dstPath)
+			if err != nil {
+				return
+			}
+
+			// if client requests to follow symbol link, then must decide target file to be copied
+			var rebaseName string
+			var srcStat types.ContainerPathStat
+			srcStat, err = cli.ContainerStatPath(*ctx, id, srcPath)
+			if err != nil {
+
+			} else {
+				if srcStat.Mode&os.ModeSymlink != 0 {
+					linkTarget := srcStat.LinkTarget
+					if !system.IsAbs(linkTarget) {
+						// Join with the parent directory.
+						srcParent, _ := archive.SplitPathDirEntry(srcPath)
+						linkTarget = filepath.Join(srcParent, linkTarget)
+					}
+
+					linkTarget, rebaseName = archive.GetRebaseName(srcPath, linkTarget)
+					srcPath = linkTarget
+				}
+			}
+
+			var content io.ReadCloser
+			var stat types.ContainerPathStat
+			content, stat, err = cli.CopyFromContainer(*ctx, id, srcPath)
+			if err != nil {
+				return
+			}
+			defer content.Close()
+
+			srcInfo := archive.CopyInfo{
+				Path:       srcPath,
+				Exists:     true,
+				IsDir:      stat.Mode.IsDir(),
+				RebaseName: rebaseName,
+			}
+
+			preArchive := content
+			if len(srcInfo.RebaseName) != 0 {
+				_, srcBase := archive.SplitPathDirEntry(srcInfo.Path)
+				preArchive = archive.RebaseArchiveEntries(content, srcBase, srcInfo.RebaseName)
+			}
+			err = archive.CopyTo(preArchive, srcInfo, dstPath)
+			if err != nil {
+				return
+			}
+		}
+	}
+
+	return
+}
+
 func runForegroundContainer(ctx *context.Context, cli *client.Client, image string, shell []string, commands []string, user string, environment []string, dir string, network string, volume string, overrideEntrypoint bool, mountDockerSock bool, logWriter io.Writer, files []File) (err error) {
 	Failed := false
 
@@ -373,6 +444,12 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 	// Check return code
 	if status.StatusCode > 0 {
 		err = errors.New("Return code not zero (" + strconv.FormatInt(status.StatusCode, 10) + ")")
+	}
+
+	// Extract files
+	err = copyFilesFromContainer(ctx, cli, ContainerID, files, dir)
+	if err != nil {
+		Failed = true
 	}
 
 	// Remove container

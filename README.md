@@ -23,7 +23,11 @@ Based on a YAML file, `insulatr` isolates build steps in individual containers w
 
 ## Why `insulatr`
 
-`insulatr` enables container native builds without the requirement of a CI/CD tool. Although the tight integration of scheduling and pipeline-as-code is beneficial, being able to choose separate tools for the job is a nice thing.
+XXX container native
+
+XXX advantages: only docker as prerequisite, isolation, control/responsibility, reproducibility
+
+XXX integration
 
 ## Usage
 
@@ -131,7 +135,7 @@ repos:
 
 ### Files
 
-The `files` node defines a list of files to be injected into the volume before running the build steps. A typical definitions looks like this:
+The `files` node defines a list of files to be injected into the volume before running the build steps as well as extracted after the build steps completed successfully. A typical definitions looks like this:
 
 ```yaml
 files:
@@ -143,6 +147,7 @@ files:
     content: |-
       foo
       bar
+  - extract: bar.txt
 ```
 
 The only supported wildcard for `inject` is `*`.
