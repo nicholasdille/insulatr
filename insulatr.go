@@ -63,12 +63,12 @@ type Step struct {
 
 // Build is used to import from YaML
 type Build struct {
-	Settings     Settings      `yaml:"settings"`
-	Repositories []Repository  `yaml:"repos"`
-	Files        []File        `yaml:"files"`
-	Services     []Service     `yaml:"services"`
-	Environment  []string      `yaml:"environment"`
-	Steps        []Step        `yaml:"steps"`
+	Settings     Settings     `yaml:"settings"`
+	Repositories []Repository `yaml:"repos"`
+	Files        []File       `yaml:"files"`
+	Services     []Service    `yaml:"services"`
+	Environment  []string     `yaml:"environment"`
+	Steps        []Step       `yaml:"steps"`
 }
 
 func defaults() *Build {
@@ -189,7 +189,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 		fmt.Printf("########## Cloning repositories\n")
 		for index, repo := range build.Repositories {
 			if repo.Name == "" {
-				err = fmt.Errorf("Repository at index <%d> is missing a name.", index)
+				err = fmt.Errorf("Repository at index <%d> is missing a name", index)
 				FailedBuild = true
 				break
 			}
@@ -197,7 +197,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 			fmt.Printf("=== cloning repo %s\n", repo.Name)
 
 			if repo.Location == "" {
-				err = fmt.Errorf("Repository at index <%d> is missing a location.", repo.Name)
+				err = fmt.Errorf("Repository at index <%d> is missing a location", repo.Name)
 				FailedBuild = true
 				break
 			}
@@ -304,7 +304,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 		fmt.Printf("########## Starting services\n")
 		for index, service := range build.Services {
 			if service.Name == "" {
-				err = fmt.Errorf("Service at index <%d> is missing a name.", index)
+				err = fmt.Errorf("Service at index <%d> is missing a name", index)
 				FailedBuild = true
 				break
 			}
@@ -312,7 +312,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 			fmt.Printf("=== Starting service %s\n", service.Name)
 
 			if service.Image == "" {
-				err = fmt.Errorf("Service <%s> is missing an image.", service.Name)
+				err = fmt.Errorf("Service <%s> is missing an image", service.Name)
 				FailedBuild = true
 				break
 			}
@@ -340,7 +340,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 		fmt.Printf("########## Running build steps\n")
 		for index, step := range build.Steps {
 			if step.Name == "" {
-				err = fmt.Errorf("Step at index <%d> is missing a name.", index)
+				err = fmt.Errorf("Step at index <%d> is missing a name", index)
 				FailedBuild = true
 				break
 			}
@@ -348,7 +348,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 			fmt.Printf("=== running step %s\n", step.Name)
 
 			if len(step.Commands) == 0 {
-				err = fmt.Errorf("Step <%s> is missing commands.", step.Name)
+				err = fmt.Errorf("Step <%s> is missing commands", step.Name)
 				FailedBuild = true
 				break
 			}

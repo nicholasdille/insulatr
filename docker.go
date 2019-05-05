@@ -1,6 +1,7 @@
 package main
 
 import (
+	"archive/tar"
 	"bytes"
 	"context"
 	"encoding/binary"
@@ -21,7 +22,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"archive/tar"
 	"time"
 )
 
@@ -112,26 +112,23 @@ func injectFile(ctx *context.Context, cli *client.Client, id string, srcPath str
 	dstStat, err = cli.ContainerStatPath(*ctx, id, dstPath)
 	if err != nil {
 		return fmt.Errorf("Failed to stat destination path <%s> (source <%s>): %s", dstPath, srcPath, err)
-
-	} else {
-		if dstStat.Mode&os.ModeSymlink != 0 {
-			linkTarget := dstStat.LinkTarget
-			if !system.IsAbs(linkTarget) {
-				dstParent, _ := archive.SplitPathDirEntry(dstPath)
-				linkTarget = filepath.Join(dstParent, linkTarget)
-			}
-
-			dstInfo.Path = linkTarget
-			dstStat, err = cli.ContainerStatPath(*ctx, id, linkTarget)
+	}
+	if dstStat.Mode&os.ModeSymlink != 0 {
+		linkTarget := dstStat.LinkTarget
+		if !system.IsAbs(linkTarget) {
+			dstParent, _ := archive.SplitPathDirEntry(dstPath)
+			linkTarget = filepath.Join(dstParent, linkTarget)
 		}
+
+		dstInfo.Path = linkTarget
+		dstStat, err = cli.ContainerStatPath(*ctx, id, linkTarget)
 	}
 
 	err = command.ValidateOutputPathFileMode(dstStat.Mode)
 	if err != nil {
 		return fmt.Errorf("Destination <%s> must be a directory or regular file", dstPath)
-	} else {
-		dstInfo.Exists, dstInfo.IsDir = true, dstStat.Mode.IsDir()
 	}
+	dstInfo.Exists, dstInfo.IsDir = true, dstStat.Mode.IsDir()
 
 	var srcInfo archive.CopyInfo
 	srcInfo, err = archive.CopyInfoSourcePath(srcPath, true)
@@ -177,9 +174,9 @@ func createFile(ctx *context.Context, cli *client.Client, id string, name string
 	go func() {
 		t.WriteHeader(
 			&tar.Header{
-				Name: name,
-				Mode: 0600,
-				Size: int64(len(dataBytes)),
+				Name:    name,
+				Mode:    0600,
+				Size:    int64(len(dataBytes)),
 				ModTime: time.Now(),
 			},
 		)
@@ -254,19 +251,17 @@ func copyFilesFromContainer(ctx *context.Context, cli *client.Client, id string,
 			srcStat, err = cli.ContainerStatPath(*ctx, id, srcPath)
 			if err != nil {
 				return fmt.Errorf("Failed to stat destination path <%s> (source <%s>): %s", dstPath, srcPath, err)
-
-			} else {
-				if srcStat.Mode&os.ModeSymlink != 0 {
-					linkTarget := srcStat.LinkTarget
-					if !system.IsAbs(linkTarget) {
-						// Join with the parent directory.
-						srcParent, _ := archive.SplitPathDirEntry(srcPath)
-						linkTarget = filepath.Join(srcParent, linkTarget)
-					}
-
-					linkTarget, rebaseName = archive.GetRebaseName(srcPath, linkTarget)
-					srcPath = linkTarget
+			}
+			if srcStat.Mode&os.ModeSymlink != 0 {
+				linkTarget := srcStat.LinkTarget
+				if !system.IsAbs(linkTarget) {
+					// Join with the parent directory.
+					srcParent, _ := archive.SplitPathDirEntry(srcPath)
+					linkTarget = filepath.Join(srcParent, linkTarget)
 				}
+
+				linkTarget, rebaseName = archive.GetRebaseName(srcPath, linkTarget)
+				srcPath = linkTarget
 			}
 
 			var content io.ReadCloser
