@@ -83,10 +83,10 @@ run: docker ; $(info $(M) Running $(PACKAGE)...)
 	@docker run -it --rm --volume /var/run/docker.sock:/var/run/docker.sock $(PACKAGE) --remove-volume --remove-network
 
 scp-%: binary ; $(info $(M) Copying to $*)
-	@tar -cz bin/$(PACKAGE) | ssh $* tar -xvz --strip-components=1
+	@tar -cz bin/$(PACKAGE) $(BUILDDEF) | ssh $* tar -xvz
 
 ssh-%: scp-% ; $(info $(M) Running remotely on $*)
-	@ssh $* ./$(PACKAGE) --file $(BUILDDEF)
+	@ssh $* ./bin/$(PACKAGE) --file $(BUILDDEF)
 
 tag-%: ; $(info $(M) Tagging as $*)
 	@hub tag $*
