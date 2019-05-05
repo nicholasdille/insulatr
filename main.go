@@ -47,7 +47,7 @@ func main() {
 
 		_, err := os.Stat(argv.File)
 		if os.IsNotExist(err) {
-			fmt.Fprintf(os.Stderr, "Error: File %s does not exist.\n", argv.File)
+			fmt.Fprintf(os.Stderr, "Error: File <%s> does not exist.\n", argv.File)
 			os.Exit(1)
 		}
 		source, err := ioutil.ReadFile(argv.File)
