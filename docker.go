@@ -291,6 +291,7 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 	}
 	ContainerID := resp.ID
 
+	// Inject files
 	err = copyFilesToContainer(ctx, cli, ContainerID, files, dir)
 	if err != nil {
 		Failed = true

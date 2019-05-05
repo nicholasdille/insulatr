@@ -158,6 +158,13 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 		}
 
 		if !FailedBuild {
+			filesToInject := []File{}
+			for _, file := range build.Files {
+				if len(file.Inject) > 0 || len(file.Create) > 0 {
+					filesToInject = append(filesToInject, file)
+				}
+			}
+
 			err := runForegroundContainer(
 				&ctxTimeout,
 				cli,
@@ -172,7 +179,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				false,
 				false,
 				os.Stdout,
-				build.Files,
+				filesToInject,
 			)
 			if err != nil {
 				fmt.Println(err)
