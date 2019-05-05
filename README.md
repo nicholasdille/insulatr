@@ -141,16 +141,19 @@ The `files` node defines a list of files to be injected into the volume before r
 files:
   - inject: "Makefile"
   - inject: "*.jar"
-  - create: foo.txt
+  - inject: foo.txt
     content: foobar
-  - create: bar.txt
+  - inject: bar.txt
     content: |-
       foo
       bar
   - extract: bar.txt
 ```
 
-The only supported wildcard for `inject` is `*`.
+The `inject` type can be used in two ways:
+
+1. If `content` is set, a new file is created in the volume
+1. If `content` is omited, locally existing files and directory are injected. The only supported wildcard is `*`.
 
 When adding a whole directory, the following works...
 
@@ -159,7 +162,7 @@ files:
   - inject: go
 ```
 
-... but the following does not (if `go/` does not exist in the volume)...
+... but the following if `go/` does not exist in the volume...
 
 ```yaml
 files:
