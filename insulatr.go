@@ -44,7 +44,6 @@ type Service struct {
 // File is used to import from YaML
 type File struct {
 	Inject      string `yaml:"inject"`
-	Create      string `yaml:"create"`
 	Content     string `yaml:"content"`
 	Extract     string `yaml:"extract"`
 	Destination string
@@ -148,13 +147,9 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 	if !FailedBuild && len(build.Files) > 0 {
 		fmt.Printf("########## Injecting files\n")
 
-		for _, file := range build.Files {
-			if len(file.Inject) > 0 && len(file.Content) > 0 {
-				fmt.Printf("When injecting file <%s>, content must not be set\n", file.Inject)
-				FailedBuild = true
-			}
-			if len(file.Create) > 0 && len(file.Content) == 0 {
-				fmt.Printf("When creating file <%s>, content must be set\n", file.Create)
+		for index, file := range build.Files {
+			if len(file.Inject) == 0 {
+				fmt.Printf("Name of injected file must be set for entry <%d>\n", index)
 				FailedBuild = true
 			}
 		}
@@ -162,7 +157,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 		if !FailedBuild {
 			filesToInject := []File{}
 			for _, file := range build.Files {
-				if len(file.Inject) > 0 || len(file.Create) > 0 {
+				if len(file.Inject) > 0 {
 					filesToInject = append(filesToInject, file)
 				}
 			}

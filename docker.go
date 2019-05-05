@@ -200,7 +200,7 @@ func createFile(ctx *context.Context, cli *client.Client, id string, name string
 
 func copyFilesToContainer(ctx *context.Context, cli *client.Client, id string, files []File, destination string) (err error) {
 	for _, file := range files {
-		if len(file.Inject) > 0 {
+		if len(file.Content) == 0 {
 			var matches []string
 			matches, err = filepath.Glob(file.Inject)
 			if err != nil {
@@ -218,10 +218,9 @@ func copyFilesToContainer(ctx *context.Context, cli *client.Client, id string, f
 					return
 				}
 			}
-		}
 
-		if len(file.Create) > 0 {
-			createFile(ctx, cli, id, file.Create, file.Content, destination)
+		} else {
+			createFile(ctx, cli, id, file.Inject, file.Content, destination)
 		}
 	}
 
