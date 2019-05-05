@@ -221,8 +221,6 @@ func copyFilesToContainer(ctx *context.Context, cli *client.Client, id string, f
 		}
 
 		if len(file.Create) > 0 {
-			fmt.Printf("Create=%s,Content=%s\n", file.Create, file.Content)
-
 			createFile(ctx, cli, id, file.Create, file.Content, destination)
 		}
 	}
