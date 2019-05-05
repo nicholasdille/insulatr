@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/docker/docker/api/types/mount"
 	"io"
 	"os"
 	"strings"
@@ -59,6 +60,7 @@ type Step struct {
 	Commands           []string `yaml:"commands"`
 	Environment        []string `yaml:"environment"`
 	MountDockerSock    bool     `yaml:"mount_docker_sock"`
+	ForwardSshAgent    bool     `yaml:"forward_ssh_agent"`
 }
 
 // Build is used to import from YaML
@@ -171,7 +173,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				build.Settings.WorkingDirectory,
 				"",
 				build.Settings.VolumeName,
-				false,
+				[]mount.Mount{},
 				false,
 				os.Stdout,
 				filesToInject,
@@ -226,6 +228,28 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				commands = append(commands, repo.Directory)
 			}
 
+			environment := []string{
+				"GIT_SSH_COMMAND=ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no",
+			}
+			bindMounts := []mount.Mount{}
+			for _, envVar := range os.Environ() {
+				pair := strings.Split(envVar, "=")
+				if pair[0] == "SSH_AUTH_SOCK" {
+					environment = append(
+						environment,
+						envVar,
+					)
+					bindMounts = append(
+						bindMounts,
+						mount.Mount{
+							Type:   mount.TypeBind,
+							Source: pair[1],
+							Target: pair[1],
+						},
+					)
+					break
+				}
+			}
 			err := runForegroundContainer(
 				&ctxTimeout,
 				cli,
@@ -233,13 +257,11 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				commands,
 				[]string{},
 				"",
-				[]string{
-					"GIT_SSH_COMMAND=ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no",
-				},
+				environment,
 				build.Settings.WorkingDirectory,
 				"",
 				build.Settings.VolumeName,
-				false,
+				bindMounts,
 				false,
 				os.Stdout,
 				[]File{},
@@ -262,7 +284,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 					build.Settings.WorkingDirectory,
 					"",
 					build.Settings.VolumeName,
-					false,
+					bindMounts,
 					false,
 					os.Stdout,
 					[]File{},
@@ -284,7 +306,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 					build.Settings.WorkingDirectory,
 					"",
 					build.Settings.VolumeName,
-					false,
+					bindMounts,
 					false,
 					os.Stdout,
 					[]File{},
@@ -382,7 +404,38 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				break
 			}
 
-			err := runForegroundContainer(
+			environment := []string{}
+			bindMounts := []mount.Mount{}
+			if step.MountDockerSock {
+				fmt.Printf("Warning: Mounting Docker socket.\n")
+				bindMounts = append(bindMounts, mount.Mount{
+					Type:   mount.TypeBind,
+					Source: "/var/run/docker.sock",
+					Target: "/var/run/docker.sock",
+				})
+			}
+			if step.ForwardSshAgent {
+				for _, envVar := range os.Environ() {
+					pair := strings.Split(envVar, "=")
+					if pair[0] == "SSH_AUTH_SOCK" {
+						environment = append(
+							environment,
+							envVar,
+						)
+						bindMounts = append(
+							bindMounts,
+							mount.Mount{
+								Type:   mount.TypeBind,
+								Source: pair[1],
+								Target: pair[1],
+							},
+						)
+						//break
+					}
+				}
+			}
+
+			err = runForegroundContainer(
 				&ctxTimeout,
 				cli,
 				step.Image,
@@ -393,8 +446,8 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				build.Settings.WorkingDirectory,
 				build.Settings.NetworkName,
 				build.Settings.VolumeName,
+				bindMounts,
 				step.OverrideEntrypoint,
-				step.MountDockerSock,
 				os.Stdout,
 				[]File{},
 			)
@@ -429,7 +482,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 			build.Settings.WorkingDirectory,
 			"",
 			build.Settings.VolumeName,
-			false,
+			[]mount.Mount{},
 			false,
 			os.Stdout,
 			filesToExtract,

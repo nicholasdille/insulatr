@@ -294,7 +294,7 @@ func copyFilesFromContainer(ctx *context.Context, cli *client.Client, id string,
 	return
 }
 
-func runForegroundContainer(ctx *context.Context, cli *client.Client, image string, shell []string, commands []string, user string, environment []string, dir string, network string, volume string, overrideEntrypoint bool, mountDockerSock bool, logWriter io.Writer, files []File) (err error) {
+func runForegroundContainer(ctx *context.Context, cli *client.Client, image string, shell []string, commands []string, user string, environment []string, dir string, network string, volume string, binds []mount.Mount, overrideEntrypoint bool, logWriter io.Writer, files []File) (err error) {
 	Failed := false
 
 	// pull image
@@ -326,14 +326,6 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 			Source: volume,
 			Target: dir,
 		},
-	}
-	if mountDockerSock {
-		fmt.Printf("Warning: Mounting Docker socket.\n")
-		mounts = append(mounts, mount.Mount{
-			Type:   mount.TypeBind,
-			Source: "/var/run/docker.sock",
-			Target: "/var/run/docker.sock",
-		})
 	}
 	endpoints := make(map[string]*dockernetwork.EndpointSettings, 1)
 	if len(network) > 0 {
