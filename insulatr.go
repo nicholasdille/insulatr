@@ -194,7 +194,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				break
 			}
 
-			fmt.Printf("=== cloning repo %s\n", repo.Name)
+			fmt.Printf("=== Cloning repository <%s>\n", repo.Name)
 
 			if repo.Location == "" {
 				err = fmt.Errorf("Repository at index <%d> is missing a location", repo.Name)
@@ -309,7 +309,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				break
 			}
 
-			fmt.Printf("=== Starting service %s\n", service.Name)
+			fmt.Printf("=== Starting service <%s>\n", service.Name)
 
 			if service.Image == "" {
 				err = fmt.Errorf("Service <%s> is missing an image", service.Name)
@@ -344,8 +344,13 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				FailedBuild = true
 				break
 			}
+			if step.Image == "" {
+				err = fmt.Errorf("Step at index <%d> is missing an image", index)
+				FailedBuild = true
+				break
+			}
 
-			fmt.Printf("=== running step %s\n", step.Name)
+			fmt.Printf("=== running step <%s>\n", step.Name)
 
 			if len(step.Commands) == 0 {
 				err = fmt.Errorf("Step <%s> is missing commands", step.Name)
@@ -464,7 +469,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 
 	if !mustReuseNetwork {
 		fmt.Printf("########## Removing network\n")
-		err = removeNetwork(&ctx, cli, build.Settings.NetworkName)
+		err := removeNetwork(&ctx, cli, build.Settings.NetworkName)
 		if err != nil {
 			return fmt.Errorf("Failed to remove network: %s", err)
 		}
@@ -473,16 +478,12 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 
 	if !mustReuseVolume {
 		fmt.Printf("########## Removing volume\n")
-		err = removeVolume(&ctx, cli, build.Settings.VolumeName)
+		err := removeVolume(&ctx, cli, build.Settings.VolumeName)
 		if err != nil {
 			return fmt.Errorf("Failed to remove volume: %s", err)
 		}
 		fmt.Printf("=== Done\n\n")
 	}
 
-	if FailedBuild {
-		return errors.New("Build failed")
-	}
-
-	return nil
+	return
 }
