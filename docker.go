@@ -17,10 +17,13 @@ import (
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/system"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"archive/tar"
+	"time"
 )
 
 func createDockerClient(ctx *context.Context) (*client.Client, error) {
@@ -90,81 +93,144 @@ func createNetwork(ctx *context.Context, cli *client.Client, name string, driver
 	return
 }
 
-func copyFilestoContainer(ctx *context.Context, cli *client.Client, id string, files []string) (err error) {
-	for _, srcPath := range files {
-		dstPath := "/src"
-		pos := strings.LastIndex(srcPath, "/")
-		if pos > -1 {
-			dstPath = dstPath + "/" + srcPath[0:pos]
-		}
+func injectFile(ctx *context.Context, cli *client.Client, id string, srcPath string, dstPath string) (err error) {
+	pos := strings.LastIndex(srcPath, "/")
+	if pos > -1 {
+		dstPath = dstPath + "/" + srcPath[0:pos]
+	}
 
-		var absPath string
-		absPath, err = filepath.Abs(dstPath)
-		if err != nil {
-			return
-		}
+	var absPath string
+	absPath, err = filepath.Abs(dstPath)
+	if err != nil {
+		return
+	}
 
-		var dstInfo archive.CopyInfo
-		var dstStat types.ContainerPathStat
-		dstPath = archive.PreserveTrailingDotOrSeparator(absPath, dstPath, filepath.Separator)
-		dstInfo = archive.CopyInfo{Path: dstPath}
-		dstStat, err = cli.ContainerStatPath(*ctx, id, dstPath)
-		if err != nil {
-			return
-		} else {
-			if dstStat.Mode&os.ModeSymlink != 0 {
-				linkTarget := dstStat.LinkTarget
-				if !system.IsAbs(linkTarget) {
-					dstParent, _ := archive.SplitPathDirEntry(dstPath)
-					linkTarget = filepath.Join(dstParent, linkTarget)
+	var dstInfo archive.CopyInfo
+	var dstStat types.ContainerPathStat
+	dstPath = archive.PreserveTrailingDotOrSeparator(absPath, dstPath, filepath.Separator)
+	dstInfo = archive.CopyInfo{Path: dstPath}
+	dstStat, err = cli.ContainerStatPath(*ctx, id, dstPath)
+	if err != nil {
+		return
+	} else {
+		if dstStat.Mode&os.ModeSymlink != 0 {
+			linkTarget := dstStat.LinkTarget
+			if !system.IsAbs(linkTarget) {
+				dstParent, _ := archive.SplitPathDirEntry(dstPath)
+				linkTarget = filepath.Join(dstParent, linkTarget)
+			}
+
+			dstInfo.Path = linkTarget
+			dstStat, err = cli.ContainerStatPath(*ctx, id, linkTarget)
+		}
+	}
+
+	err = command.ValidateOutputPathFileMode(dstStat.Mode)
+	if err != nil {
+		err = errors.New("Destination must be a directory regular file")
+		return
+	} else {
+		dstInfo.Exists, dstInfo.IsDir = true, dstStat.Mode.IsDir()
+	}
+
+	var srcInfo archive.CopyInfo
+	srcInfo, err = archive.CopyInfoSourcePath(srcPath, true)
+	if err != nil {
+		return
+	}
+
+	var srcArchive io.ReadCloser
+	srcArchive, err = archive.TarResource(srcInfo)
+	if err != nil {
+		return
+	}
+	defer srcArchive.Close()
+
+	var dstDir string
+	var content io.ReadCloser
+	dstDir, content, err = archive.PrepareArchiveCopy(srcArchive, srcInfo, dstInfo)
+	if err != nil {
+		return
+	}
+	defer content.Close()
+
+	err = cli.CopyToContainer(*ctx, id, dstDir, content, types.CopyToContainerOptions{
+		AllowOverwriteDirWithFile: false,
+	})
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func createFile(ctx *context.Context, cli *client.Client, id string, name string, data string, dir string) (err error) {
+	var content io.ReadCloser
+	var dataBytes []byte
+
+	content, writer := io.Pipe()
+	dataBytes, err = ioutil.ReadAll(bytes.NewBufferString(data))
+	if err != nil {
+		return
+	}
+	t := tar.NewWriter(writer)
+	go func() {
+		t.WriteHeader(
+			&tar.Header{
+				Name: name,
+				Mode: 0600,
+				Size: int64(len(dataBytes)),
+				ModTime: time.Now(),
+			},
+		)
+		t.Write(dataBytes)
+		t.Close()
+		writer.Close()
+	}()
+
+	err = cli.CopyToContainer(*ctx, id, dir, content, types.CopyToContainerOptions{
+		AllowOverwriteDirWithFile: false,
+	})
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func copyFilesToContainer(ctx *context.Context, cli *client.Client, id string, files []File, destination string) (err error) {
+	for _, file := range files {
+		if len(file.Inject) > 0 {
+			var matches []string
+			matches, err = filepath.Glob(file.Inject)
+			if err != nil {
+				err = fmt.Errorf("Unable to glob file <%s>", file.Inject)
+				return
+			}
+			if len(matches) == 0 {
+				err = fmt.Errorf("No file matches glob <%s>", file.Inject)
+				return
+			}
+
+			for _, match := range matches {
+				err = injectFile(ctx, cli, id, match, destination)
+				if err != nil {
+					return
 				}
-
-				dstInfo.Path = linkTarget
-				dstStat, err = cli.ContainerStatPath(*ctx, id, linkTarget)
 			}
 		}
 
-		err = command.ValidateOutputPathFileMode(dstStat.Mode)
-		if err != nil {
-			err = errors.New("Destination must be a directory regular file")
-			return
-		} else {
-			dstInfo.Exists, dstInfo.IsDir = true, dstStat.Mode.IsDir()
-		}
+		if len(file.Create) > 0 {
+			fmt.Printf("Create=%s,Content=%s\n", file.Create, file.Content)
 
-		var srcInfo archive.CopyInfo
-		srcInfo, err = archive.CopyInfoSourcePath(srcPath, true)
-		if err != nil {
-			return
-		}
-
-		var srcArchive io.ReadCloser
-		srcArchive, err = archive.TarResource(srcInfo)
-		if err != nil {
-			return
-		}
-		defer srcArchive.Close()
-
-		var dstDir string
-		var preparedArchive io.ReadCloser
-		dstDir, preparedArchive, err = archive.PrepareArchiveCopy(srcArchive, srcInfo, dstInfo)
-		if err != nil {
-			return
-		}
-		defer preparedArchive.Close()
-
-		err = cli.CopyToContainer(*ctx, id, dstDir, preparedArchive, types.CopyToContainerOptions{
-			AllowOverwriteDirWithFile: false,
-		})
-		if err != nil {
-			return
+			createFile(ctx, cli, id, file.Create, file.Content, destination)
 		}
 	}
 
 	return
 }
 
-func runForegroundContainer(ctx *context.Context, cli *client.Client, image string, shell []string, commands []string, user string, environment []string, dir string, network string, volume string, overrideEntrypoint bool, mountDockerSock bool, logWriter io.Writer, files []string) (err error) {
+func runForegroundContainer(ctx *context.Context, cli *client.Client, image string, shell []string, commands []string, user string, environment []string, dir string, network string, volume string, overrideEntrypoint bool, mountDockerSock bool, logWriter io.Writer, files []File) (err error) {
 	Failed := false
 
 	// pull image
@@ -225,7 +291,7 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 	}
 	ContainerID := resp.ID
 
-	err = copyFilestoContainer(ctx, cli, ContainerID, files)
+	err = copyFilesToContainer(ctx, cli, ContainerID, files, dir)
 	if err != nil {
 		Failed = true
 	}

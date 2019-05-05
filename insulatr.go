@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 )
@@ -42,9 +41,11 @@ type Service struct {
 	Privileged  bool     `yaml:"privileged"`
 }
 
-// Files is used to import from YaML
-type Files struct {
-	Inject  []string `yaml:"inject"`
+// File is used to import from YaML
+type File struct {
+	Inject  string `yaml:"inject"`
+	Create  string `yaml:"create"`
+	Content string `yaml:"content"`
 }
 
 // Step is used to import from YaML
@@ -61,12 +62,12 @@ type Step struct {
 
 // Build is used to import from YaML
 type Build struct {
-	Settings     Settings     `yaml:"settings"`
-	Repositories []Repository `yaml:"repos"`
-	Files        Files        `yaml:"files"`
-	Services     []Service    `yaml:"services"`
-	Environment  []string     `yaml:"environment"`
-	Steps        []Step       `yaml:"steps"`
+	Settings     Settings      `yaml:"settings"`
+	Repositories []Repository  `yaml:"repos"`
+	Files        []File        `yaml:"files"`
+	Services     []Service     `yaml:"services"`
+	Environment  []string      `yaml:"environment"`
+	Steps        []Step        `yaml:"steps"`
 }
 
 func defaults() *Build {
@@ -127,8 +128,9 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 		if err != nil {
 			fmt.Println(err)
 			FailedBuild = true
+		} else {
+			fmt.Printf("%s\n\n", build.Settings.VolumeName)
 		}
-		fmt.Printf("%s\n\n", build.Settings.VolumeName)
 	}
 
 	if !FailedBuild && !mustReuseNetwork {
@@ -141,46 +143,43 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 		fmt.Printf("%s\n\n", newNetworkID)
 	}
 
-	if !FailedBuild && len(build.Files.Inject) > 0 {
+	if !FailedBuild && len(build.Files) > 0 {
 		fmt.Printf("########## Injecting files\n")
-		files := []string{}
-		for _, file := range build.Files.Inject {
-			matches, err := filepath.Glob(file)
-			if err != nil {
-				fmt.Printf("Error: Unable to glob file <%s>\n", file)
+
+		for _, file := range build.Files {
+			if len(file.Inject) > 0 && len(file.Content) > 0 {
+				fmt.Printf("When injecting file <%s>, content must not be set\n", file.Inject)
 				FailedBuild = true
-				break
 			}
-			if len(matches) == 0 {
-				fmt.Printf("Error: No file matches glob <%s>\n", file)
+			if len(file.Create) > 0 && len(file.Content) == 0 {
+				fmt.Printf("When creating file <%s>, content must be set\n", file.Create)
 				FailedBuild = true
-				break
-			}
-			for _, match := range matches {
-				files = append(files, match)
 			}
 		}
 
-		err := runForegroundContainer(
-			&ctxTimeout,
-			cli,
-			"alpine",
-			[]string{"sh"},
-			[]string{},
-			"",
-			[]string{},
-			"/src",
-			"",
-			build.Settings.VolumeName,
-			false,
-			false,
-			os.Stdout,
-			files,
-		)
-		if err != nil {
-			fmt.Println(err)
-			FailedBuild = true
+		if !FailedBuild {
+			err := runForegroundContainer(
+				&ctxTimeout,
+				cli,
+				"alpine",
+				[]string{"sh"},
+				[]string{},
+				"",
+				[]string{},
+				build.Settings.WorkingDirectory,
+				"",
+				build.Settings.VolumeName,
+				false,
+				false,
+				os.Stdout,
+				build.Files,
+			)
+			if err != nil {
+				fmt.Println(err)
+				FailedBuild = true
+			}
 		}
+
 		fmt.Printf("\n")
 	}
 
@@ -241,7 +240,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				false,
 				false,
 				os.Stdout,
-				[]string{},
+				[]File{},
 			)
 			if err != nil {
 				fmt.Println(err)
@@ -263,7 +262,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 					false,
 					false,
 					os.Stdout,
-					[]string{},
+					[]File{},
 				)
 				if err != nil {
 					fmt.Println(err)
@@ -284,7 +283,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 					false,
 					false,
 					os.Stdout,
-					[]string{},
+					[]File{},
 				)
 				if err != nil {
 					fmt.Println(err)
@@ -387,7 +386,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				step.OverrideEntrypoint,
 				step.MountDockerSock,
 				os.Stdout,
-				[]string{},
+				[]File{},
 			)
 			if err != nil {
 				fmt.Println(err)

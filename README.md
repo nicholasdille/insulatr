@@ -135,27 +135,30 @@ The `files` node defines a list of files to be injected into the volume before r
 
 ```yaml
 files:
-  inject:
-    - Makefile
-    - *.jar
+  - inject: "Makefile"
+  - inject: "*.jar"
+  - create: foo.txt
+    content: foobar
+  - create: bar.txt
+    content: |-
+      foo
+      bar
 ```
 
-The only supported wildcard is `*`.
+The only supported wildcard for `inject` is `*`.
 
 When adding a whole directory, the following works...
 
 ```yaml
 files:
-  inject:
-    - go
+  - inject: go
 ```
 
 ... but the following does not (if `go/` does not exist in the volume)...
 
 ```yaml
 files:
-  inject:
-    - go/*
+  - inject: go/*
 ```
 
 ### Services
