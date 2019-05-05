@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/docker/api/types"
@@ -102,7 +101,7 @@ func injectFile(ctx *context.Context, cli *client.Client, id string, srcPath str
 	var absPath string
 	absPath, err = filepath.Abs(dstPath)
 	if err != nil {
-		return fmt.Errorf("Failed to obtain absolute path for path <%s> (source <%s>): %s", dstPath, srcPath. err)
+		return fmt.Errorf("Failed to obtain absolute path for path <%s> (source <%s>): %s", dstPath, srcPath, err)
 	}
 
 	var dstInfo archive.CopyInfo
@@ -223,7 +222,7 @@ func copyFilesToContainer(ctx *context.Context, cli *client.Client, id string, f
 		} else {
 			err = createFile(ctx, cli, id, file.Inject, file.Content, destination)
 			if err != nil {
-				return fmt.Errorf("Failed to create file <%s>: %s", match, err)
+				return fmt.Errorf("Failed to create file <%s>: %s", file.Inject, err)
 			}
 		}
 	}
@@ -240,7 +239,7 @@ func copyFilesFromContainer(ctx *context.Context, cli *client.Client, id string,
 			var absPath string
 			absPath, err = filepath.Abs(dstPath)
 			if err != nil {
-				return fmt.Errorf("Failed to obtain absolute path for path <%s> (source <%s>): %s", dstPath, srcPath. err)
+				return fmt.Errorf("Failed to obtain absolute path for path <%s> (source <%s>): %s", dstPath, srcPath, err)
 			}
 			dstPath = archive.PreserveTrailingDotOrSeparator(absPath, dstPath, filepath.Separator)
 
@@ -417,7 +416,7 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 				for {
 					_, err := reader.Read(hdr)
 					if err != nil {
-						return fmt.Errorf("Failed to read header from container logs: %s", err)
+						return
 					}
 					count := binary.BigEndian.Uint32(hdr[4:])
 					dat := make([]byte, count)
@@ -464,8 +463,8 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 	if err2 != nil {
 		err2 = fmt.Errorf("Error: Failed to remove container for image <%s>", image)
 
-		if FailedBuild {
-			fmt.FPrintln(os.Stderr, err2)
+		if Failed {
+			fmt.Fprintf(os.Stderr, "%s\n", err2)
 		} else {
 			err = err2
 		}
@@ -478,7 +477,7 @@ func runBackgroundContainer(ctx *context.Context, cli *client.Client, image stri
 	// pull image
 	_, err = cli.ImagePull(*ctx, image, types.ImagePullOptions{})
 	if err != nil {
-		return fmt.Errorf("Failed to pull image <%s>: %s", image, err)
+		return "", fmt.Errorf("Failed to pull image <%s>: %s", image, err)
 	}
 
 	// create container
@@ -505,7 +504,7 @@ func runBackgroundContainer(ctx *context.Context, cli *client.Client, image stri
 		name,
 	)
 	if err != nil {
-		return fmt.Errorf("Failed to create container: %s", err)
+		return "", fmt.Errorf("Failed to create container: %s", err)
 	}
 	id = resp.ID
 	fmt.Printf("%s\n", id)
@@ -551,7 +550,7 @@ func stopAndRemoveContainer(ctx *context.Context, cli *client.Client, containerI
 
 	err = cli.ContainerRemove(*ctx, containerID, types.ContainerRemoveOptions{})
 	if err != nil {
-		return fmt.Errorf("Error: Failed to remove container for image <%s>", image)
+		return fmt.Errorf("Error: Failed to remove container <%s>", containerID)
 	}
 
 	return nil
