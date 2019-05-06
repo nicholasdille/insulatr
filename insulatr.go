@@ -4,10 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/docker/docker/api/types/mount"
-	"io"
-	"os"
-	"strings"
 	"time"
 )
 
@@ -145,21 +141,10 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 	}
 
 	if !FailedBuild {
-		for index, envVarDef := range build.Environment {
-			if !strings.Contains(envVarDef, "=") {
-				FoundMatch := false
-				for _, envVar := range os.Environ() {
-					pair := strings.Split(envVar, "=")
-					if pair[0] == envVarDef {
-						build.Environment[index] = envVar
-						FoundMatch = true
-					}
-				}
-				if !FoundMatch {
-					err = fmt.Errorf("Unable to find match for environment variable <%s> for global environment", envVarDef)
-					FailedBuild = true
-				}
-			}
+		err = expandGlobalEnvironment(build)
+		if err != nil {
+			err = fmt.Errorf("Failed to expand global environment: %s", err)
+			FailedBuild = true
 		}
 	}
 
@@ -180,117 +165,10 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				break
 			}
 
-			var ref string
-			if len(repo.Branch) > 0 {
-				ref = repo.Branch
-			}
-			if len(ref) == 0 && len(repo.Tag) > 0 {
-				ref = repo.Tag
-			}
-			if len(ref) == 0 || len(repo.Commit) > 0 {
-				ref = repo.Commit
-			}
-			if len(ref) > 0 {
-				fmt.Printf("Ignoring shallow because branch was specified.\n")
-				repo.Shallow = false
-			}
-
-			commands := []string{"clone"}
-			if repo.Shallow {
-				commands = append(commands, "--depth", "1")
-			}
-			commands = append(commands, repo.Location)
-			if len(repo.Directory) > 0 {
-				commands = append(commands, repo.Directory)
-			}
-
-			environment := []string{
-				"GIT_SSH_COMMAND=ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no",
-			}
-			bindMounts := []mount.Mount{}
-			for _, envVar := range os.Environ() {
-				pair := strings.Split(envVar, "=")
-				if pair[0] == "SSH_AUTH_SOCK" {
-					environment = append(
-						environment,
-						envVar,
-					)
-					bindMounts = append(
-						bindMounts,
-						mount.Mount{
-							Type:   mount.TypeBind,
-							Source: pair[1],
-							Target: pair[1],
-						},
-					)
-				}
-			}
-			err := runForegroundContainer(
-				&ctxTimeout,
-				cli,
-				"alpine/git",
-				commands,
-				[]string{},
-				"",
-				environment,
-				build.Settings.WorkingDirectory,
-				"",
-				build.Settings.VolumeName,
-				bindMounts,
-				false,
-				os.Stdout,
-				[]File{},
-			)
+			err = cloneRepo(&ctxTimeout, cli, repo, build.Settings.WorkingDirectory, build.Settings.VolumeName)
 			if err != nil {
-				err = fmt.Errorf("Failed to clone repository <%s>: ", repo.Name, err)
+				err = fmt.Errorf("Failed to clone repository <%s>: %s", repo.Name, err)
 				FailedBuild = true
-				break
-			}
-
-			if len(ref) > 0 {
-				err := runForegroundContainer(
-					&ctxTimeout,
-					cli,
-					"alpine/git",
-					[]string{"fetch", "--all"},
-					[]string{},
-					"",
-					[]string{},
-					build.Settings.WorkingDirectory,
-					"",
-					build.Settings.VolumeName,
-					bindMounts,
-					false,
-					os.Stdout,
-					[]File{},
-				)
-				if err != nil {
-					err = fmt.Errorf("Failed to fetch from repository <%s>: %s", repo.Name, err)
-					FailedBuild = true
-					break
-				}
-
-				err = runForegroundContainer(
-					&ctxTimeout,
-					cli,
-					"alpine/git",
-					[]string{"checkout", ref},
-					[]string{},
-					"",
-					[]string{},
-					build.Settings.WorkingDirectory,
-					"",
-					build.Settings.VolumeName,
-					bindMounts,
-					false,
-					os.Stdout,
-					[]File{},
-				)
-				if err != nil {
-					err = fmt.Errorf("Failed to checkout in repository <%s>: %s", repo.Name, err)
-					FailedBuild = true
-					break
-				}
 			}
 		}
 		fmt.Printf("\n")
@@ -314,38 +192,14 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				break
 			}
 
-			for index, envVarDef := range service.Environment {
-				if !strings.Contains(envVarDef, "=") {
-					FoundMatch := false
-					for _, envVar := range build.Environment {
-						pair := strings.Split(envVar, "=")
-						if pair[0] == envVarDef {
-							service.Environment[index] = envVar
-							FoundMatch = true
-						}
-					}
-					if !FoundMatch {
-						err = fmt.Errorf("Unable to find match for environment variable <%s> in service <%s>", envVarDef, service.Name)
-						FailedBuild = true
-					}
-				}
-			}
-
 			var containerID string
-			containerID, err = runBackgroundContainer(
-				&ctxTimeout,
-				cli,
-				service.Image,
-				service.Environment,
-				build.Settings.NetworkName,
-				service.Name,
-				service.Privileged,
-			)
+			containerID, err = startService(&ctxTimeout, cli, service, build.Settings.NetworkName, build)
 			if err != nil {
 				err = fmt.Errorf("Failed to start service <%s>: %s", service.Name, err)
 				FailedBuild = true
 				break
 			}
+			
 			services[service.Name] = containerID
 		}
 		fmt.Printf("\n")
@@ -354,37 +208,8 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 	if !FailedBuild && len(build.Files) > 0 {
 		fmt.Printf("########## Injecting files\n")
 
-		for index, file := range build.Files {
-			if len(file.Inject) == 0 {
-				err = fmt.Errorf("Name of injected file must be set for entry at index <%d>", index)
-				FailedBuild = true
-			}
-		}
-
 		if !FailedBuild {
-			filesToInject := []File{}
-			for _, file := range build.Files {
-				if len(file.Inject) > 0 {
-					filesToInject = append(filesToInject, file)
-				}
-			}
-
-			err := runForegroundContainer(
-				&ctxTimeout,
-				cli,
-				"alpine",
-				[]string{"sh"},
-				[]string{},
-				"",
-				[]string{},
-				build.Settings.WorkingDirectory,
-				"",
-				build.Settings.VolumeName,
-				[]mount.Mount{},
-				false,
-				os.Stdout,
-				filesToInject,
-			)
+			err = injectFiles(&ctxTimeout, cli, build.Files, build.Settings.WorkingDirectory, build.Settings.VolumeName)
 			if err != nil {
 				err = fmt.Errorf("Failed to inject files: %s", err)
 				FailedBuild = true
@@ -416,84 +241,13 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				break
 			}
 
-			if len(step.Shell) == 0 {
-				step.Shell = build.Settings.Shell
-			}
-
-			environment := step.Environment
-			for _, globalEnvVar := range build.Environment {
-				environment = append(environment, globalEnvVar)
-			}
-			for index, envVarDef := range environment {
-				if !strings.Contains(envVarDef, "=") {
-					FoundMatch := false
-					for _, envVar := range os.Environ() {
-						pair := strings.Split(envVar, "=")
-						if pair[0] == envVarDef {
-							environment[index] = envVar
-							FoundMatch = true
-						}
-					}
-					if !FoundMatch {
-						err = fmt.Errorf("Unable to find match for environment variable <%s> in build step <%s>", envVarDef, step.Name)
-						FailedBuild = true
-					}
-				}
-			}
-			if FailedBuild {
-				break
-			}
-
-			bindMounts := []mount.Mount{}
-			if step.MountDockerSock {
-				fmt.Printf("Warning: Mounting Docker socket.\n")
-				bindMounts = append(bindMounts, mount.Mount{
-					Type:   mount.TypeBind,
-					Source: "/var/run/docker.sock",
-					Target: "/var/run/docker.sock",
-				})
-			}
-			if step.ForwardSSHAgent {
-				for _, envVar := range os.Environ() {
-					pair := strings.Split(envVar, "=")
-					if pair[0] == "SSH_AUTH_SOCK" {
-						environment = append(
-							environment,
-							envVar,
-						)
-						bindMounts = append(
-							bindMounts,
-							mount.Mount{
-								Type:   mount.TypeBind,
-								Source: pair[1],
-								Target: pair[1],
-							},
-						)
-					}
-				}
-			}
-
-			err = runForegroundContainer(
-				&ctxTimeout,
-				cli,
-				step.Image,
-				step.Shell,
-				step.Commands,
-				step.User,
-				environment,
-				build.Settings.WorkingDirectory,
-				build.Settings.NetworkName,
-				build.Settings.VolumeName,
-				bindMounts,
-				step.OverrideEntrypoint,
-				os.Stdout,
-				[]File{},
-			)
+			err = runStep(&ctxTimeout, cli, step, build.Environment, build.Settings.Shell, build.Settings.WorkingDirectory, build.Settings.VolumeName, build.Settings.NetworkName)
 			if err != nil {
 				err = fmt.Errorf("Failed to run build step <%s>: %s", step.Name, err)
 				FailedBuild = true
 				break
 			}
+
 			fmt.Printf("\n")
 		}
 	}
@@ -501,30 +255,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 	if !FailedBuild && len(build.Files) > 0 {
 		fmt.Printf("########## Extracting files\n")
 
-		filesToExtract := []File{}
-		for _, file := range build.Files {
-			if len(file.Extract) > 0 {
-				file.Destination = "."
-				filesToExtract = append(filesToExtract, file)
-			}
-		}
-
-		err := runForegroundContainer(
-			&ctxTimeout,
-			cli,
-			"alpine",
-			[]string{"sh"},
-			[]string{},
-			"",
-			[]string{},
-			build.Settings.WorkingDirectory,
-			"",
-			build.Settings.VolumeName,
-			[]mount.Mount{},
-			false,
-			os.Stdout,
-			filesToExtract,
-		)
+		err = extractFiles(&ctxTimeout, cli, build.Files, build.Settings.WorkingDirectory, build.Settings.VolumeName)
 		if err != nil {
 			err = fmt.Errorf("Failed to extract files: %s", err)
 			FailedBuild = true
@@ -537,22 +268,14 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 		fmt.Printf("########## Stopping services\n")
 		for name, containerID := range services {
 			fmt.Printf("=== stopping service %s\n", name)
-			var logWriter io.Writer
-			logWriter = os.Stdout
-			var service Service
-			for _, service = range build.Services {
-				if service.Name == name {
-					break
-				}
-			}
-			if service.SuppressLog {
-				logWriter = nil
-			}
-			err := stopAndRemoveContainer(&ctx, cli, containerID, logWriter)
+
+			err = stopService(&ctxTimeout, cli, name, containerID, build.Services)
 			if err != nil {
-				err = fmt.Errorf("Failed to stop service <%s> with ID <%s>: %s", name, containerID, err)
+				err = fmt.Errorf("Failed to stop service <%s> with container ID <%s>: %s", name, containerID, err)
 				FailedBuild = true
+				break
 			}
+
 			delete(services, name)
 		}
 		fmt.Printf("\n")
