@@ -38,10 +38,10 @@ $(GLIDE): ; $(info $(M) Installing glide...)
 $(DEPTH): $(BASE) ; $(info $(M) Installing depth...)
 	@$(GO) get github.com/KyleBanks/depth/cmd/depth
 
-depupdate: $(BASE) ; $(info $(M) Updating dependencies...)
+depupdate: $(BASE) $(GLIDE) ; $(info $(M) Updating dependencies...)
 	@$(GLIDE) update
 
-deps: $(BASE) ; $(info $(M) Updating dependencies...)
+deps: $(BASE) $(GLIDE) ; $(info $(M) Updating dependencies...)
 	@$(GLIDE) install
 
 format: $(BASE) ; $(info $(M) Running formatter...)
