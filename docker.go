@@ -422,7 +422,8 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 		// Waits for timeout
 		case <-(*ctx).Done():
 			err = fmt.Errorf("Request timed out: %s", (*ctx).Err())
-			// Waits for error
+			Failed = true
+		// Waits for error
 		case err := <-errCh:
 			if err != nil {
 				err = fmt.Errorf("Failed to wait for container: %s", err)
@@ -436,13 +437,16 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 	// Check return code
 	if status.StatusCode > 0 {
 		err = fmt.Errorf("Return code not zero (%s)", strconv.FormatInt(status.StatusCode, 10))
+		Failed = true
 	}
 
 	// Extract files
-	err = copyFilesFromContainer(ctx, cli, ContainerID, files, dir)
-	if err != nil {
-		err = fmt.Errorf("Failed to extract files: %s", err)
-		Failed = true
+	if !Failed {
+		err = copyFilesFromContainer(ctx, cli, ContainerID, files, dir)
+		if err != nil {
+			err = fmt.Errorf("Failed to extract files: %s", err)
+			Failed = true
+		}
 	}
 
 	// Remove container
