@@ -298,10 +298,17 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 	Failed := false
 
 	// pull image
-	_, err = cli.ImagePull(*ctx, image, types.ImagePullOptions{})
+	var pullReader io.ReadCloser
+	pullReader, err = cli.ImagePull(*ctx, image, types.ImagePullOptions{})
 	if err != nil {
 		return fmt.Errorf("Failed to pull image <%s>: %s", image, err)
 	}
+	scanner := bufio.NewScanner(pullReader)
+	for scanner.Scan() {}
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("Failed to read pull messages for image <%s>: %s", image, err)
+	}
+	pullReader.Close()
 
 	// create container
 	containerConfig := container.Config{
@@ -469,10 +476,17 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 
 func runBackgroundContainer(ctx *context.Context, cli *client.Client, image string, environment []string, network string, name string, privileged bool) (id string, err error) {
 	// pull image
-	_, err = cli.ImagePull(*ctx, image, types.ImagePullOptions{})
+	var pullReader io.ReadCloser
+	pullReader, err = cli.ImagePull(*ctx, image, types.ImagePullOptions{})
 	if err != nil {
-		return "", fmt.Errorf("Failed to pull image <%s>: %s", image, err)
+		return fmt.Errorf("Failed to pull image <%s>: %s", image, err)
 	}
+	scanner := bufio.NewScanner(pullReader)
+	for scanner.Scan() {}
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("Failed to read pull messages for image <%s>: %s", image, err)
+	}
+	pullReader.Close()
 
 	// create container
 	hostConfig := container.HostConfig{}
