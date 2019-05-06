@@ -60,7 +60,7 @@ type Step struct {
 	Commands           []string `yaml:"commands"`
 	Environment        []string `yaml:"environment"`
 	MountDockerSock    bool     `yaml:"mount_docker_sock"`
-	ForwardSshAgent    bool     `yaml:"forward_ssh_agent"`
+	ForwardSSHAgent    bool     `yaml:"forward_ssh_agent"`
 }
 
 // Build is used to import from YaML
@@ -414,7 +414,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 					Target: "/var/run/docker.sock",
 				})
 			}
-			if step.ForwardSshAgent {
+			if step.ForwardSSHAgent {
 				for _, envVar := range os.Environ() {
 					pair := strings.Split(envVar, "=")
 					if pair[0] == "SSH_AUTH_SOCK" {
