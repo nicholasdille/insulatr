@@ -144,49 +144,6 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 		fmt.Printf("%s\n\n", newNetworkID)
 	}
 
-	if !FailedBuild && len(build.Files) > 0 {
-		fmt.Printf("########## Injecting files\n")
-
-		for index, file := range build.Files {
-			if len(file.Inject) == 0 {
-				err = fmt.Errorf("Name of injected file must be set for entry at index <%d>", index)
-				FailedBuild = true
-			}
-		}
-
-		if !FailedBuild {
-			filesToInject := []File{}
-			for _, file := range build.Files {
-				if len(file.Inject) > 0 {
-					filesToInject = append(filesToInject, file)
-				}
-			}
-
-			err := runForegroundContainer(
-				&ctxTimeout,
-				cli,
-				"alpine",
-				[]string{"sh"},
-				[]string{},
-				"",
-				[]string{},
-				build.Settings.WorkingDirectory,
-				"",
-				build.Settings.VolumeName,
-				[]mount.Mount{},
-				false,
-				os.Stdout,
-				filesToInject,
-			)
-			if err != nil {
-				err = fmt.Errorf("Failed to inject files: %s", err)
-				FailedBuild = true
-			}
-		}
-
-		fmt.Printf("\n")
-	}
-
 	if !FailedBuild && len(build.Repositories) > 0 {
 		fmt.Printf("########## Cloning repositories\n")
 		for index, repo := range build.Repositories {
@@ -355,6 +312,49 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 			}
 			services[service.Name] = containerID
 		}
+		fmt.Printf("\n")
+	}
+
+	if !FailedBuild && len(build.Files) > 0 {
+		fmt.Printf("########## Injecting files\n")
+
+		for index, file := range build.Files {
+			if len(file.Inject) == 0 {
+				err = fmt.Errorf("Name of injected file must be set for entry at index <%d>", index)
+				FailedBuild = true
+			}
+		}
+
+		if !FailedBuild {
+			filesToInject := []File{}
+			for _, file := range build.Files {
+				if len(file.Inject) > 0 {
+					filesToInject = append(filesToInject, file)
+				}
+			}
+
+			err := runForegroundContainer(
+				&ctxTimeout,
+				cli,
+				"alpine",
+				[]string{"sh"},
+				[]string{},
+				"",
+				[]string{},
+				build.Settings.WorkingDirectory,
+				"",
+				build.Settings.VolumeName,
+				[]mount.Mount{},
+				false,
+				os.Stdout,
+				filesToInject,
+			)
+			if err != nil {
+				err = fmt.Errorf("Failed to inject files: %s", err)
+				FailedBuild = true
+			}
+		}
+
 		fmt.Printf("\n")
 	}
 
