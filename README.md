@@ -13,6 +13,7 @@ Based on a YAML file, `insulatr` isolates build steps in individual containers w
     1. [Alias](#alias)
 1. [Build definitions](#build-definitions)
     1. [Settings](#settings)
+    1. [Environment](#environment)
     1. [Repositories](#repositories)
     1. [Files](#files)
     1. [Services](#services)
@@ -83,6 +84,7 @@ alias insulatr="echo -e 'FROM nicholasdille/insulatr\nADD insulatr.yaml /' | doc
 `insulatr` requires a build definition written in YAML with the following sections:
 
 1. [Settings](#settings)
+1. [Environment](#environment)
 1. [Repositories](#repositories)
 1. [Files](#files)
 1. [Services](#services)
@@ -112,6 +114,29 @@ settings:
   network_driver: bridge
   timeout: 60
 ```
+
+### Environment
+
+The `environment` node defines a list of global environment variables. They are automatically added to every build step and can be added to services:
+
+```yaml
+environment:
+  - FOO=bar
+
+services:
+  - name: backend
+    image: myimage
+    environment:
+      - FOO
+
+steps:
+  - name: build
+    image: myotherimage
+    commands:
+      - printenv
+```
+
+Variables names without values will be resolved against the environment of `insulatr`.
 
 ### Repositories
 

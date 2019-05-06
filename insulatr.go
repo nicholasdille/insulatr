@@ -144,6 +144,25 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 		fmt.Printf("%s\n\n", newNetworkID)
 	}
 
+	if !FailedBuild {
+		for index, envVarDef := range build.Environment {
+			if !strings.Contains(envVarDef, "=") {
+				FoundMatch := false
+				for _, envVar := range os.Environ() {
+					pair := strings.Split(envVar, "=")
+					if pair[0] == envVarDef {
+						build.Environment[index] = envVar
+						FoundMatch = true
+					}
+				}
+				if !FoundMatch {
+					err = fmt.Errorf("Unable to find match for environment variable <%s> for global environment", envVarDef)
+					FailedBuild = true
+				}
+			}
+		}
+	}
+
 	if !FailedBuild && len(build.Repositories) > 0 {
 		fmt.Printf("########## Cloning repositories\n")
 		for index, repo := range build.Repositories {
@@ -295,7 +314,25 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				break
 			}
 
-			containerID, err := runBackgroundContainer(
+			for index, envVarDef := range service.Environment {
+				if !strings.Contains(envVarDef, "=") {
+					FoundMatch := false
+					for _, envVar := range build.Environment {
+						pair := strings.Split(envVar, "=")
+						if pair[0] == envVarDef {
+							service.Environment[index] = envVar
+							FoundMatch = true
+						}
+					}
+					if !FoundMatch {
+						err = fmt.Errorf("Unable to find match for environment variable <%s> in service <%s>", envVarDef, service.Name)
+						FailedBuild = true
+					}
+				}
+			}
+
+			var containerID string
+			containerID, err = runBackgroundContainer(
 				&ctxTimeout,
 				cli,
 				service.Image,
@@ -383,18 +420,22 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				step.Shell = build.Settings.Shell
 			}
 
-			for index, envVarDef := range step.Environment {
+			environment := step.Environment
+			for _, globalEnvVar := range build.Environment {
+				environment = append(environment, globalEnvVar)
+			}
+			for index, envVarDef := range environment {
 				if !strings.Contains(envVarDef, "=") {
 					FoundMatch := false
 					for _, envVar := range os.Environ() {
 						pair := strings.Split(envVar, "=")
 						if pair[0] == envVarDef {
-							step.Environment[index] = envVar
+							environment[index] = envVar
 							FoundMatch = true
 						}
 					}
 					if !FoundMatch {
-						err = fmt.Errorf("Unable to find match for environment variable <%s>", envVarDef)
+						err = fmt.Errorf("Unable to find match for environment variable <%s> in build step <%s>", envVarDef, step.Name)
 						FailedBuild = true
 					}
 				}
@@ -403,7 +444,6 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				break
 			}
 
-			environment := step.Environment
 			bindMounts := []mount.Mount{}
 			if step.MountDockerSock {
 				fmt.Printf("Warning: Mounting Docker socket.\n")
