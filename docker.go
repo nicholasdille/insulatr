@@ -327,6 +327,9 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 			Target: dir,
 		},
 	}
+	for _, bind := range binds {
+		mounts = append(mounts, bind)
+	}
 	endpoints := make(map[string]*dockernetwork.EndpointSettings, 1)
 	if len(network) > 0 {
 		endpoints[network] = &dockernetwork.EndpointSettings{}

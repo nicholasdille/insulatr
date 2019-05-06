@@ -133,6 +133,10 @@ repos:
     location: https://github.com/nicholasdille/insulatr
 ```
 
+Git repositories can be accessed using HTTPS or SSH. Currently, credentials for HTTPS are not supported and you are strongly discouraged from hardcoding the credentials in plaintext in the build definition. For SSH, the agent socket is mapped into the container so that public key authentication will work.
+
+Note that you can use the following URL to clone from GitHub using SSH without authenticating: `git://github.com/<username>/<repo>.git`
+
 ### Files
 
 The `files` node defines a list of files to be injected into the volume before running the build steps as well as extracted after the build steps completed successfully. A typical definitions looks like this:
@@ -197,6 +201,7 @@ The `steps` node defines a list of build steps to execute. XXX.
 - `environment` (optional) defines the environment variables passed to the build step.
 - `user` (optional) is a user to execute the commands under.
 - `shell` (optional) overrides the [global `shell` setting](#settings).
+- `forward_ssh_agent` (optional) enabled bind mounting the SSH agent socket into the build step. It defaults to `false`.
 - `override_entrypoint` (optional) executes the shell as the entrypoint. It defaults to `false`.
 - `mount_docker_sock` (optional) mounts `/var/run/docker.sock` into the container. It defaults to `false`.
 

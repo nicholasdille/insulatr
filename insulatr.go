@@ -204,7 +204,6 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 							Target: pair[1],
 						},
 					)
-					break
 				}
 			}
 			err := runForegroundContainer(
@@ -404,7 +403,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				break
 			}
 
-			environment := []string{}
+			environment := step.Environment
 			bindMounts := []mount.Mount{}
 			if step.MountDockerSock {
 				fmt.Printf("Warning: Mounting Docker socket.\n")
@@ -430,7 +429,6 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 								Target: pair[1],
 							},
 						)
-						//break
 					}
 				}
 			}
@@ -442,7 +440,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				step.Shell,
 				step.Commands,
 				step.User,
-				step.Environment,
+				environment,
 				build.Settings.WorkingDirectory,
 				build.Settings.NetworkName,
 				build.Settings.VolumeName,
