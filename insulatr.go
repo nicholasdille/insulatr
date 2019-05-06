@@ -456,8 +456,8 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				FailedBuild = true
 				break
 			}
+			fmt.Printf("\n")
 		}
-		fmt.Printf("\n")
 	}
 
 	if !FailedBuild && len(build.Files) > 0 {
