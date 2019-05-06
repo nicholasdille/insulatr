@@ -5,7 +5,7 @@ repos:
   - name: insulatr
     location: https://github.com/nicholasdille/insulatr
     shallow: true
-    directory: .
+    directory: go/src/github.com/nicholasdille/insulatr
 
 services:
   - name: dind
@@ -13,14 +13,26 @@ services:
     privileged: true
     suppress_log: true
 
+files:
+  - inject: Dockerfile
+    content: |
+      FROM scratch
+      COPY /go/src/github.com/nicholasdille/insulatr/bin/insulatr-x86_64 /insulatr
+      ENTRYPOINT [ "/insulatr" ]
+
 steps:
 
   - name: build
+    image: golang:1.11
+    commands:
+      - curl https://glide.sh/get | sh
+      - cd go/src/github.com/nicholasdille/insulatr
+      - glide install
+      - make static
+
+  - name: docker
     image: docker:stable
     environment:
       - DOCKER_HOST=tcp://dind:2375
-      - HUB_USER
-      - HUB_PASS
     commands:
-      - printenv
-      #- docker build --tag insulatr:latest .
+      - docker build --tag insulatr:latest .
