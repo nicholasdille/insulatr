@@ -1,0 +1,35 @@
+settings:
+  shell: [ "sh", "-x", "-e" ]
+
+environment:
+  - XDG_SESSION_ID
+
+repos:
+  - name: insulatr
+    location: https://github.com/nicholasdille/insulatr
+    directory: .
+
+files:
+  - inject: blarg.txt
+  - inject: test.txt
+    content: data
+  - extract: test.txt
+
+services:
+  - name: db
+    image: mysql
+    environment:
+      - MYSQL_RANDOM_ROOT_PASSWORD=yes
+    suppress_log: true
+  - name: web
+    image: nginx
+    suppress_log: true
+
+steps:
+  - name: check
+    image: alpine
+    commands:
+      - printenv
+      - ls -l
+      - apk add --update-cache --no-cache curl
+      - curl web
