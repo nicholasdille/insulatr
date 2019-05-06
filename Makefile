@@ -32,11 +32,17 @@ $(BASE): ; $(info $(M) Creating link...)
 $(GOLINT): $(BASE) ; $(info $(M) Installing linter...)
 	@$(GO) get github.com/golang/lint/golint
 
+$(GLIDE): ; $(info $(M) Installing glide...)
+	@curl https://glide.sh/get | sh
+
 $(DEPTH): $(BASE) ; $(info $(M) Installing depth...)
 	@$(GO) get github.com/KyleBanks/depth/cmd/depth
 
-deps: $(BASE) ; $(info $(M) Updating dependencies...)
+depupdate: $(BASE) ; $(info $(M) Updating dependencies...)
 	@$(GLIDE) update
+
+deps: $(BASE) ; $(info $(M) Updating dependencies...)
+	@$(GLIDE) install
 
 format: $(BASE) ; $(info $(M) Running formatter...)
 	@$(GOFMT) -l -w $(SOURCE)
