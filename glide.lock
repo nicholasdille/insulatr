@@ -1,5 +1,5 @@
 hash: 404aaa7f42bf18fa62214588e7fa4a4193ec21895d90400235949f429daa7cce
-updated: 2019-05-02T09:28:07.4584792+02:00
+updated: 2019-05-07T17:05:43.3310663+02:00
 imports:
 - name: github.com/Azure/go-ansiterm
   version: d6e3b3328b783f23731bc4d058875b0371ff8109
@@ -279,6 +279,8 @@ imports:
   version: 94122c33edd36123c84d5368cfb2b69df93a0ec8
 - name: github.com/morikuni/aec
   version: 39771216ff4c63d11f5e604076f9c45e8be1067b
+- name: github.com/op/go-logging
+  version: 970db520ece77730c7e4724c61121037378659d9
 - name: github.com/opencontainers/go-digest
   version: ac19fd6e7483ff933754af248d80be865e543d22
 - name: github.com/opencontainers/image-spec
