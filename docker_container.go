@@ -26,7 +26,8 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 		return
 	}
 	scanner := bufio.NewScanner(pullReader)
-	for scanner.Scan() {}
+	for scanner.Scan() {
+	}
 	if err = scanner.Err(); err != nil {
 		err = Error("Failed to read pull messages for image <%s>: %s", image, err)
 		return
@@ -206,7 +207,8 @@ func runBackgroundContainer(ctx *context.Context, cli *client.Client, image stri
 		return
 	}
 	scanner := bufio.NewScanner(pullReader)
-	for scanner.Scan() {}
+	for scanner.Scan() {
+	}
 	if err = scanner.Err(); err != nil {
 		err = Error("Failed to read pull messages for image <%s>: %s", image, err)
 		return

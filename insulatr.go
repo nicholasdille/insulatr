@@ -90,12 +90,17 @@ func defaults() *Build {
 	}
 }
 
+// log contains the global logger
 var log = logging.MustGetLogger("insulatr")
+
+// FileFormat defines the log format for the file backend
 var FileFormat = logging.MustStringFormatter(
-    `%{time:2006-01-02T15:04:05.999Z-07:00} %{level:.7s} %{message}`,
+	`%{time:2006-01-02T15:04:05.999Z-07:00} %{level:.7s} %{message}`,
 )
+
+// ConsoleFormat defines the log format for the console backend
 var ConsoleFormat = logging.MustStringFormatter(
-    `%{color}%{time:15:04:05} %{message}%{color:reset}`,
+	`%{color}%{time:15:04:05} %{message}%{color:reset}`,
 )
 
 func prepareLogging(ConsoleLogLevelString string, FileWriter io.Writer) {
@@ -109,16 +114,16 @@ func prepareLogging(ConsoleLogLevelString string, FileWriter io.Writer) {
 		ConsoleLogLevel = logging.INFO
 	}
 
-	FileBackend    := logging.NewLogBackend(FileWriter, "", 0)
+	FileBackend := logging.NewLogBackend(FileWriter, "", 0)
 	FileBackendFormatter := logging.NewBackendFormatter(FileBackend, FileFormat)
-    FileBackendLeveled := logging.AddModuleLevel(FileBackendFormatter)
-    FileBackendLeveled.SetLevel(logging.INFO, "")
+	FileBackendLeveled := logging.AddModuleLevel(FileBackendFormatter)
+	FileBackendLeveled.SetLevel(logging.INFO, "")
 
-    ConsoleBackend := logging.NewLogBackend(os.Stdout, "", 0)
+	ConsoleBackend := logging.NewLogBackend(os.Stdout, "", 0)
 	ConsoleBackendFormatter := logging.NewBackendFormatter(ConsoleBackend, ConsoleFormat)
 	ConsoleBackendLeveled := logging.AddModuleLevel(ConsoleBackendFormatter)
-    ConsoleBackendLeveled.SetLevel(ConsoleLogLevel, "")
-    
+	ConsoleBackendLeveled.SetLevel(ConsoleLogLevel, "")
+
 	logging.SetBackend(FileBackendLeveled, ConsoleBackendLeveled)
 }
 
@@ -134,9 +139,9 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 	}
 
 	FileWriter, err := os.OpenFile("logs/test.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
-    if err != nil {
+	if err != nil {
 		return Error("Failed to open file: ", err)
-    }
+	}
 	prepareLogging(build.Settings.ConsoleLogLevel, FileWriter)
 	log.Noticef("Running insulatr version %s built at %s from %s\n", Version, BuildTime, GitCommit)
 
@@ -252,7 +257,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				FailedBuild = true
 				break
 			}
-			
+
 			services[service.Name] = containerID
 		}
 	}
