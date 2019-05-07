@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/docker/api/types"
@@ -127,18 +128,24 @@ func copyFilesToContainer(ctx *context.Context, cli *client.Client, id string, f
 			var matches []string
 			matches, err = filepath.Glob(file.Inject)
 			if err != nil {
-				err = fmt.Errorf("Unable to glob file <%s>", file.Inject)
+				message := fmt.Sprintf("Unable to glob file <%s>", file.Inject)
+				log.Error(message)
+				err = errors.New(message)
 				return
 			}
 			if len(matches) == 0 {
-				err = fmt.Errorf("No file matches glob <%s>", file.Inject)
+				message := fmt.Sprintf("No file matches glob <%s>", file.Inject)
+				log.Error(message)
+				err = errors.New(message)
 				return
 			}
 
 			for _, match := range matches {
 				err = injectFile(ctx, cli, id, match, destination)
 				if err != nil {
-					return fmt.Errorf("Failed to inject file <%s>: %s", match, err)
+					message := fmt.Sprintf("Failed to inject file <%s>: %s", match, err)
+					log.Error(message)
+					err = errors.New(message)
 				}
 			}
 		}
@@ -156,13 +163,19 @@ func copyFilesFromContainer(ctx *context.Context, cli *client.Client, id string,
 			var absPath string
 			absPath, err = filepath.Abs(dstPath)
 			if err != nil {
-				return fmt.Errorf("Failed to obtain absolute path for path <%s> (source <%s>): %s", dstPath, srcPath, err)
+				message := fmt.Sprintf("Failed to obtain absolute path for path <%s> (source <%s>): %s", dstPath, srcPath, err)
+				log.Error(message)
+				err = errors.New(message)
+				return
 			}
 			dstPath = archive.PreserveTrailingDotOrSeparator(absPath, dstPath, filepath.Separator)
 
 			err = command.ValidateOutputPath(dstPath)
 			if err != nil {
-				return fmt.Errorf("Failed to validate path <%s>: %s", dstPath, err)
+				message := fmt.Sprintf("Failed to validate path <%s>: %s", dstPath, err)
+				log.Error(message)
+				err = errors.New(message)
+				return
 			}
 
 			// if client requests to follow symbol link, then must decide target file to be copied
@@ -170,7 +183,10 @@ func copyFilesFromContainer(ctx *context.Context, cli *client.Client, id string,
 			var srcStat types.ContainerPathStat
 			srcStat, err = cli.ContainerStatPath(*ctx, id, srcPath)
 			if err != nil {
-				return fmt.Errorf("Failed to stat destination path <%s> (source <%s>): %s", dstPath, srcPath, err)
+				message := fmt.Sprintf("Failed to stat destination path <%s> (source <%s>): %s", dstPath, srcPath, err)
+				log.Error(message)
+				err = errors.New(message)
+				return
 			}
 			if srcStat.Mode&os.ModeSymlink != 0 {
 				linkTarget := srcStat.LinkTarget
@@ -188,7 +204,10 @@ func copyFilesFromContainer(ctx *context.Context, cli *client.Client, id string,
 			var stat types.ContainerPathStat
 			content, stat, err = cli.CopyFromContainer(*ctx, id, srcPath)
 			if err != nil {
-				return fmt.Errorf("Failed to copy from container from path <%s>: %s", srcPath, err)
+				message := fmt.Sprintf("Failed to copy from container from path <%s>: %s", srcPath, err)
+				log.Error(message)
+				err = errors.New(message)
+				return
 			}
 			defer content.Close()
 
@@ -206,7 +225,10 @@ func copyFilesFromContainer(ctx *context.Context, cli *client.Client, id string,
 			}
 			err = archive.CopyTo(preArchive, srcInfo, dstPath)
 			if err != nil {
-				return fmt.Errorf("Failed to write to disk for path <%s>: %s", dstPath, err)
+				message := fmt.Sprintf("Failed to write to disk for path <%s>: %s", dstPath, err)
+				log.Error(message)
+				err = errors.New(message)
+				return
 			}
 		}
 	}

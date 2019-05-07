@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -24,12 +25,18 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 	var pullReader io.ReadCloser
 	pullReader, err = cli.ImagePull(*ctx, image, types.ImagePullOptions{})
 	if err != nil {
-		return fmt.Errorf("Failed to pull image <%s>: %s", image, err)
+		message := fmt.Sprintf("Failed to pull image <%s>: %s", image, err)
+		log.Error(message)
+		err = errors.New(message)
+		return
 	}
 	scanner := bufio.NewScanner(pullReader)
 	for scanner.Scan() {}
-	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("Failed to read pull messages for image <%s>: %s", image, err)
+	if err = scanner.Err(); err != nil {
+		message := fmt.Sprintf("Failed to read pull messages for image <%s>: %s", image, err)
+		log.Error(message)
+		err = errors.New(message)
+		return
 	}
 	pullReader.Close()
 
@@ -76,14 +83,19 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 		"",
 	)
 	if err != nil {
-		return fmt.Errorf("Failed to create container: %s", err)
+		message := fmt.Sprintf("Failed to create container: %s", err)
+		log.Error(message)
+		err = errors.New(message)
+		return
 	}
 	ContainerID := resp.ID
 
 	// Inject files
 	err = copyFilesToContainer(ctx, cli, ContainerID, files, dir)
 	if err != nil {
-		err = fmt.Errorf("Failed to inject files: %s", err)
+		message := fmt.Sprintf("Failed to inject files: %s", err)
+		log.Error(message)
+		err = errors.New(message)
 		Failed = true
 	}
 
@@ -95,7 +107,9 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 			Stdin:  true,
 		})
 		if err != nil {
-			err = fmt.Errorf("Failed to attach to container: %s", err)
+			message := fmt.Sprintf("Failed to attach to container: %s", err)
+			log.Error(message)
+			err = errors.New(message)
 			Failed = true
 		}
 		defer AttachResp.Close()
@@ -104,7 +118,9 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 	// Start container
 	if !Failed {
 		if err = cli.ContainerStart(*ctx, ContainerID, types.ContainerStartOptions{}); err != nil {
-			err = fmt.Errorf("Failed to start container: %s", err)
+			message := fmt.Sprintf("Failed to start container: %s", err)
+			log.Error(message)
+			err = errors.New(message)
 			Failed = true
 		}
 	}
@@ -114,7 +130,9 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 		_, err = io.Copy(AttachResp.Conn, bytes.NewBufferString(strings.Join(commands, "\n")))
 		AttachResp.CloseWrite()
 		if err != nil {
-			err = fmt.Errorf("Failed to send commands to container: %s", err)
+			message := fmt.Sprintf("Failed to send commands to container: %s", err)
+			log.Error(message)
+			err = errors.New(message)
 			Failed = true
 		}
 	}
@@ -127,7 +145,9 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 			Follow:     true,
 		})
 		if err != nil {
-			err = fmt.Errorf("Failed to connect to container logs: %s", err)
+			message := fmt.Sprintf("Failed to connect to container logs: %s", err)
+			log.Error(message)
+			err = errors.New(message)
 			Failed = true
 
 		} else {
@@ -154,12 +174,16 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 		select {
 		// Waits for timeout
 		case <-(*ctx).Done():
-			err = fmt.Errorf("Request timed out: %s", (*ctx).Err())
+			message := fmt.Sprintf("Request timed out: %s", (*ctx).Err())
+			log.Error(message)
+			err = errors.New(message)
 			Failed = true
 		// Waits for error
 		case err := <-errCh:
 			if err != nil {
-				err = fmt.Errorf("Failed to wait for container: %s", err)
+				message := fmt.Sprintf("Failed to wait for container: %s", err)
+				log.Error(message)
+				err = errors.New(message)
 				Failed = true
 			}
 		// Waits for status code
@@ -169,7 +193,9 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 
 	// Check return code
 	if status.StatusCode > 0 {
-		err = fmt.Errorf("Return code not zero (%s)", strconv.FormatInt(status.StatusCode, 10))
+		message := fmt.Sprintf("Return code not zero (%s)", strconv.FormatInt(status.StatusCode, 10))
+		log.Error(message)
+		err = errors.New(message)
 		Failed = true
 	}
 
@@ -177,7 +203,9 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 	if !Failed {
 		err = copyFilesFromContainer(ctx, cli, ContainerID, files, dir)
 		if err != nil {
-			err = fmt.Errorf("Failed to extract files: %s", err)
+			message := fmt.Sprintf("Failed to extract files: %s", err)
+			log.Error(message)
+			err = errors.New(message)
 			Failed = true
 		}
 	}
@@ -185,7 +213,9 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 	// Remove container
 	err2 := cli.ContainerRemove(*ctx, ContainerID, types.ContainerRemoveOptions{})
 	if err2 != nil {
-		err2 = fmt.Errorf("Error: Failed to remove container for image <%s>", image)
+		message := fmt.Sprintf("Error: Failed to remove container for image <%s>", image)
+		log.Error(message)
+		err2 = errors.New(message)
 
 		if Failed {
 			fmt.Fprintf(os.Stderr, "%s\n", err2)
@@ -202,19 +232,25 @@ func runBackgroundContainer(ctx *context.Context, cli *client.Client, image stri
 	var pullReader io.ReadCloser
 	pullReader, err = cli.ImagePull(*ctx, image, types.ImagePullOptions{})
 	if err != nil {
-		return "", fmt.Errorf("Failed to pull image <%s>: %s", image, err)
+		message := fmt.Sprintf("Failed to pull image <%s>: %s", image, err)
+		log.Error(message)
+		err = errors.New(message)
+		return
 	}
 	scanner := bufio.NewScanner(pullReader)
 	for scanner.Scan() {}
-	if err := scanner.Err(); err != nil {
-		return "", fmt.Errorf("Failed to read pull messages for image <%s>: %s", image, err)
+	if err = scanner.Err(); err != nil {
+		message := fmt.Sprintf("Failed to read pull messages for image <%s>: %s", image, err)
+		log.Error(message)
+		err = errors.New(message)
+		return
 	}
 	pullReader.Close()
 
 	// create container
 	hostConfig := container.HostConfig{}
 	if privileged {
-		fmt.Printf("Warning: Running privileged container.\n")
+		log.Warning("Running privileged container.")
 		hostConfig.Privileged = true
 	}
 	endpoints := make(map[string]*dockernetwork.EndpointSettings, 1)
@@ -235,14 +271,19 @@ func runBackgroundContainer(ctx *context.Context, cli *client.Client, image stri
 		name,
 	)
 	if err != nil {
-		return "", fmt.Errorf("Failed to create container: %s", err)
+		message := fmt.Sprintf("Failed to create container: %s", err)
+		log.Error(message)
+		err = errors.New(message)
+		return
 	}
 	id = resp.ID
 	fmt.Printf("%s\n", id)
 
 	// Start container
 	if err = cli.ContainerStart(*ctx, id, types.ContainerStartOptions{}); err != nil {
-		err = fmt.Errorf("Failed to start container: %s", err)
+		message := fmt.Sprintf("Failed to start container: %s", err)
+		log.Error(message)
+		err = errors.New(message)
 	}
 
 	return
@@ -251,7 +292,10 @@ func runBackgroundContainer(ctx *context.Context, cli *client.Client, image stri
 func stopAndRemoveContainer(ctx *context.Context, cli *client.Client, containerID string, logWriter io.Writer) (err error) {
 	err = cli.ContainerStop(*ctx, containerID, nil)
 	if err != nil {
-		return fmt.Errorf("Failed to stop container: %s", err)
+		message := fmt.Sprintf("Failed to stop container: %s", err)
+		log.Error(message)
+		err = errors.New(message)
+		return
 	}
 
 	var reader io.ReadCloser
@@ -260,7 +304,10 @@ func stopAndRemoveContainer(ctx *context.Context, cli *client.Client, containerI
 		ShowStderr: true,
 	})
 	if err != nil {
-		return fmt.Errorf("Failed to connect to container logs: %s", err)
+		message := fmt.Sprintf("Failed to connect to container logs: %s", err)
+		log.Error(message)
+		err = errors.New(message)
+		return
 	}
 	if logWriter != nil {
 		hdr := make([]byte, 8)
@@ -270,7 +317,10 @@ func stopAndRemoveContainer(ctx *context.Context, cli *client.Client, containerI
 				if err == io.EOF {
 					break
 				}
-				return fmt.Errorf("Failed to read header from container logs: %s", err)
+				message := fmt.Sprintf("Failed to read header from container logs: %s", err)
+				log.Error(message)
+				err = errors.New(message)
+				return
 			}
 			count := binary.BigEndian.Uint32(hdr[4:])
 			dat := make([]byte, count)
@@ -281,7 +331,10 @@ func stopAndRemoveContainer(ctx *context.Context, cli *client.Client, containerI
 
 	err = cli.ContainerRemove(*ctx, containerID, types.ContainerRemoveOptions{})
 	if err != nil {
-		return fmt.Errorf("Error: Failed to remove container <%s>", containerID)
+		message := fmt.Sprintf("Error: Failed to remove container <%s>", containerID)
+		log.Error(message)
+		err = errors.New(message)
+		return
 	}
 
 	return nil

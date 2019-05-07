@@ -75,7 +75,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		err = run(build, argv.ReuseVolume, argv.RemoveVolume, argv.ReuseNetwork, argv.RemoveNetwork, argv.AllowDockerSock, argv.AllowPrivileged)
+		run(build, argv.ReuseVolume, argv.RemoveVolume, argv.ReuseNetwork, argv.RemoveNetwork, argv.AllowDockerSock, argv.AllowPrivileged)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error building %s: %s\n", argv.File, err)
 			os.Exit(1)

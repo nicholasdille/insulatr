@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
@@ -21,7 +22,7 @@ func cloneRepo(ctx *context.Context, cli *client.Client, repo Repository, Workin
 		ref = repo.Commit
 	}
 	if len(ref) > 0 {
-		fmt.Printf("Ignoring shallow because branch was specified.\n")
+		log.Warning("Ignoring shallow because branch was specified.")
 		repo.Shallow = false
 	}
 
@@ -72,7 +73,10 @@ func cloneRepo(ctx *context.Context, cli *client.Client, repo Repository, Workin
 		[]File{},
 	)
 	if err != nil {
-		return fmt.Errorf("Failed to clone repository <%s>: ", repo.Name, err)
+		message := fmt.Sprintf("Failed to clone repository <%s>: ", repo.Name, err)
+		log.Error(message)
+		err = errors.New(message)
+		return
 	}
 
 	if len(ref) > 0 {
@@ -93,7 +97,10 @@ func cloneRepo(ctx *context.Context, cli *client.Client, repo Repository, Workin
 			[]File{},
 		)
 		if err != nil {
-			return fmt.Errorf("Failed to fetch from repository <%s>: %s", repo.Name, err)
+			message := fmt.Sprintf("Failed to fetch from repository <%s>: %s", repo.Name, err)
+			log.Error(message)
+			err = errors.New(message)
+			return
 		}
 
 		err = runForegroundContainer(
@@ -113,7 +120,10 @@ func cloneRepo(ctx *context.Context, cli *client.Client, repo Repository, Workin
 			[]File{},
 		)
 		if err != nil {
-			return fmt.Errorf("Failed to checkout in repository <%s>: %s", repo.Name, err)
+			message := fmt.Sprintf("Failed to checkout in repository <%s>: %s", repo.Name, err)
+			log.Error(message)
+			err = errors.New(message)
+			return
 		}
 	}
 

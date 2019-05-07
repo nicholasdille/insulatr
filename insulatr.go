@@ -112,6 +112,12 @@ func prepareLogging(FileWriter io.Writer) {
 	logging.SetBackend(FileBackendLeveled, ConsoleBackendLeveled)
 }
 
+func Error(format string, a ...interface{}) (err error) {
+	message := fmt.Sprintf(format, a)
+	log.Error(message)
+	return errors.New(message)
+}
+
 func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, mustRemoveNetwork bool, allowDockerSock bool, allowPrivileged bool) (err error) {
 	if _, err := os.Stat(build.Settings.LogDirectory); os.IsNotExist(err) {
 		os.Mkdir(build.Settings.LogDirectory, 0755)
@@ -119,17 +125,20 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 
 	FileWriter, err := os.OpenFile("logs/test.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
     if err != nil {
-        fmt.Printf("Failed to open file: ", err)
+		message := fmt.Sprintf("Failed to open file: ", err)
+		log.Error(message)
+		return errors.New(message)
     }
-	prepareLogging(FileWriter)	
-	log.Infof("Running insulatr version %s built at %s from %s\n", Version, BuildTime, GitCommit)
+	prepareLogging(FileWriter)
+	log.Noticef("Running insulatr version %s built at %s from %s\n", Version, BuildTime, GitCommit)
 
 	if len(build.Repositories) > 1 {
 		for _, repo := range build.Repositories {
 			if len(repo.Directory) == 0 || repo.Directory == "." {
-				message := fmt.Sprintf("All repositories require the directory node to be set (<.> is not allowed)")
+				/*message := fmt.Sprintf("All repositories require the directory node to be set (<.> is not allowed)")
 				log.Error(message)
-				return errors.New(message)
+				return errors.New(message)*/
+				return Error("All repositories require the directory node to be set (<.> is not allowed)")
 			}
 		}
 	}
@@ -148,40 +157,38 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 	FailedBuild := false
 
 	if mustRemoveVolume {
-		log.Info("########## Remove volume")
+		log.Debug("########## Remove volume")
 		err = removeVolume(&ctxTimeout, cli, build.Settings.VolumeName)
 		if err != nil {
 			message := fmt.Sprintf("Failed to remove volume: %s", err)
 			log.Error(message)
 			return errors.New(message)
 		}
-		log.Info("=== Done")
 	}
 
 	if mustRemoveNetwork {
-		log.Info("########## Remove network")
+		log.Debug("########## Remove network")
 		err = removeNetwork(&ctxTimeout, cli, build.Settings.NetworkName)
 		if err != nil {
 			message := fmt.Sprintf("Failed to remove network: %s", err)
 			log.Error(message)
 			return errors.New(message)
 		}
-		log.Info("=== Done")
 	}
 
 	if !mustReuseVolume {
-		log.Info("########## Create volume")
+		log.Debug("########## Create volume")
 		err := createVolume(&ctxTimeout, cli, build.Settings.VolumeName, build.Settings.VolumeDriver)
 		if err != nil {
 			message := fmt.Sprintf("Failed to create volume: %s", err)
 			log.Error(message)
 			return errors.New(message)
 		}
-		log.Infof("Volume name: %s", build.Settings.VolumeName)
+		log.Debugf("Volume name: %s", build.Settings.VolumeName)
 	}
 
 	if !FailedBuild && !mustReuseNetwork {
-		log.Info("########## Create network")
+		log.Debug("########## Create network")
 		newNetworkID, err := createNetwork(&ctxTimeout, cli, build.Settings.NetworkName, build.Settings.NetworkDriver)
 		if err != nil {
 			message := fmt.Sprintf("Failed to create network: %s", err)
@@ -189,7 +196,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 			err = errors.New(message)
 			FailedBuild = true
 		}
-		log.Infof("Network ID: %s", newNetworkID)
+		log.Debugf("Network ID: %s", newNetworkID)
 	}
 
 	if !FailedBuild {
@@ -203,7 +210,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 	}
 
 	if !FailedBuild && len(build.Repositories) > 0 {
-		log.Info("########## Cloning repositories")
+		log.Notice("########## Cloning repositories")
 		for index, repo := range build.Repositories {
 			if repo.Name == "" {
 				message := fmt.Sprintf("Repository at index <%d> is missing a name", index)
@@ -213,7 +220,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				break
 			}
 
-			log.Infof("=== Cloning repository <%s>", repo.Name)
+			log.Noticef("########## Cloning repository <%s>", repo.Name)
 
 			if repo.Location == "" {
 				message := fmt.Sprintf("Repository at index <%d> is missing a location", repo.Name)
@@ -235,7 +242,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 
 	services := make(map[string]string)
 	if !FailedBuild && len(build.Services) > 0 {
-		log.Info("########## Starting services")
+		log.Notice("########## Starting services")
 		for index, service := range build.Services {
 			if service.Name == "" {
 				message := fmt.Sprintf("Service at index <%d> is missing a name", index)
@@ -245,7 +252,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				break
 			}
 
-			log.Infof("=== Starting service <%s>", service.Name)
+			log.Noticef("########## Starting service <%s>", service.Name)
 
 			if service.Image == "" {
 				message := fmt.Sprintf("Service <%s> is missing an image", service.Name)
@@ -270,7 +277,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 	}
 
 	if !FailedBuild && len(build.Files) > 0 {
-		log.Info("########## Injecting files")
+		log.Notice("########## Injecting files")
 
 		if !FailedBuild {
 			err = injectFiles(&ctxTimeout, cli, build.Files, build.Settings.WorkingDirectory, build.Settings.VolumeName)
@@ -284,7 +291,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 	}
 
 	if !FailedBuild && len(build.Steps) > 0 {
-		log.Info("########## Running build steps")
+		log.Notice("########## Running build steps")
 		for index, step := range build.Steps {
 			if step.Name == "" {
 				message := fmt.Sprintf("Step at index <%d> is missing a name", index)
@@ -301,7 +308,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 				break
 			}
 
-			log.Infof("=== running step <%s>", step.Name)
+			log.Noticef("########## running step <%s>", step.Name)
 
 			if len(step.Commands) == 0 {
 				message := fmt.Sprintf("Step <%s> is missing commands", step.Name)
@@ -323,7 +330,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 	}
 
 	if !FailedBuild && len(build.Files) > 0 {
-		log.Info("########## Extracting files")
+		log.Notice("########## Extracting files")
 
 		err = extractFiles(&ctxTimeout, cli, build.Files, build.Settings.WorkingDirectory, build.Settings.VolumeName)
 		if err != nil {
@@ -335,9 +342,8 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 	}
 
 	if len(services) > 0 {
-		log.Info("########## Stopping services")
 		for name, containerID := range services {
-			log.Infof("=== stopping service %s", name)
+			log.Noticef("########## Stopping service %s", name)
 
 			err = stopService(&ctxTimeout, cli, name, containerID, build.Services)
 			if err != nil {
@@ -353,7 +359,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 	}
 
 	if !mustReuseNetwork {
-		log.Info("########## Removing network")
+		log.Debug("########## Removing network")
 		err := removeNetwork(&ctx, cli, build.Settings.NetworkName)
 		if err != nil {
 			message := fmt.Sprintf("Failed to remove network: %s", err)
@@ -363,7 +369,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 	}
 
 	if !mustReuseVolume {
-		log.Info("########## Removing volume")
+		log.Debug("########## Removing volume")
 		err := removeVolume(&ctx, cli, build.Settings.VolumeName)
 		if err != nil {
 			message := fmt.Sprintf("Failed to remove volume: %s", err)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
@@ -29,7 +30,9 @@ func runStep(ctx *context.Context, cli *client.Client, step Step, globalEnvironm
 				}
 			}
 			if !FoundMatch {
-				err = fmt.Errorf("Unable to find match for environment variable <%s> in build step <%s>", envVarDef, step.Name)
+				message := fmt.Sprintf("Unable to find match for environment variable <%s> in build step <%s>", envVarDef, step.Name)
+				log.Error(message)
+				err = errors.New(message)
 				return
 			}
 		}
@@ -37,7 +40,7 @@ func runStep(ctx *context.Context, cli *client.Client, step Step, globalEnvironm
 
 	bindMounts := []mount.Mount{}
 	if step.MountDockerSock {
-		fmt.Printf("Warning: Mounting Docker socket.\n")
+		log.Warning("Warning: Mounting Docker socket.")
 		bindMounts = append(bindMounts, mount.Mount{
 			Type:   mount.TypeBind,
 			Source: "/var/run/docker.sock",
@@ -81,7 +84,9 @@ func runStep(ctx *context.Context, cli *client.Client, step Step, globalEnvironm
 		[]File{},
 	)
 	if err != nil {
-		err = fmt.Errorf("Failed to run container: %s", err)
+		message := fmt.Sprintf("Failed to run container: %s", err)
+		log.Error(message)
+		err = errors.New(message)
 		return
 	}
 

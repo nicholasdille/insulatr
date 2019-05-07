@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/docker/docker/client"
 	"io"
@@ -21,7 +22,9 @@ func startService(ctx *context.Context, cli *client.Client, service Service, Net
 				}
 			}
 			if !FoundMatch {
-				err = fmt.Errorf("Unable to find match for environment variable <%s> in service <%s>", envVarDef, service.Name)
+				message := fmt.Sprintf("Unable to find match for environment variable <%s> in service <%s>", envVarDef, service.Name)
+				log.Error(message)
+				err = errors.New(message)
 				return
 			}
 		}
@@ -37,7 +40,9 @@ func startService(ctx *context.Context, cli *client.Client, service Service, Net
 		service.Privileged,
 	)
 	if err != nil {
-		err = fmt.Errorf("Failed to start service <%s>: %s", service.Name, err)
+		message := fmt.Sprintf("Failed to start service <%s>: %s", service.Name, err)
+		log.Error(message)
+		err = errors.New(message)
 		return
 	}
 
@@ -58,7 +63,9 @@ func stopService(ctx *context.Context, cli *client.Client, name string, id strin
 	}
 	err = stopAndRemoveContainer(ctx, cli, id, logWriter)
 	if err != nil {
-		err = fmt.Errorf("Failed to stop service <%s> with ID <%s>: %s", name, id, err)
+		message := fmt.Sprintf("Failed to stop service <%s> with ID <%s>: %s", name, id, err)
+		log.Error(message)
+		err = errors.New(message)
 		return
 	}
 
