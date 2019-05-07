@@ -69,9 +69,7 @@ func extractFiles(ctx *context.Context, cli *client.Client, files []File, Workin
 		filesToExtract,
 	)
 	if err != nil {
-		message := fmt.Sprintf("Failed to run container: %s", err)
-		log.Error(message)
-		err = errors.New(message)
+		err = Error("Failed to run container: %s", err)
 		return
 	}
 

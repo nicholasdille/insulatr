@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	"os"
@@ -73,9 +71,7 @@ func cloneRepo(ctx *context.Context, cli *client.Client, repo Repository, Workin
 		[]File{},
 	)
 	if err != nil {
-		message := fmt.Sprintf("Failed to clone repository <%s>: ", repo.Name, err)
-		log.Error(message)
-		err = errors.New(message)
+		err = Error("Failed to clone repository <%s>: ", repo.Name, err)
 		return
 	}
 
@@ -97,9 +93,7 @@ func cloneRepo(ctx *context.Context, cli *client.Client, repo Repository, Workin
 			[]File{},
 		)
 		if err != nil {
-			message := fmt.Sprintf("Failed to fetch from repository <%s>: %s", repo.Name, err)
-			log.Error(message)
-			err = errors.New(message)
+			err = Error("Failed to fetch from repository <%s>: %s", repo.Name, err)
 			return
 		}
 
@@ -120,9 +114,7 @@ func cloneRepo(ctx *context.Context, cli *client.Client, repo Repository, Workin
 			[]File{},
 		)
 		if err != nil {
-			message := fmt.Sprintf("Failed to checkout in repository <%s>: %s", repo.Name, err)
-			log.Error(message)
-			err = errors.New(message)
+			err = Error("Failed to checkout in repository <%s>: %s", repo.Name, err)
 			return
 		}
 	}

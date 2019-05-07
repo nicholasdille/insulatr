@@ -13,17 +13,17 @@ func removeNetwork(ctx *context.Context, cli *client.Client, name string) (err e
 		Filters: filters.NewArgs(),
 	})
 	if err != nil {
-		return
+		return Error("Failed to list networks: %s", err)
 	}
 	for _, network := range networks {
 		if network.Name == name {
 			err = cli.NetworkRemove(*ctx, network.Name)
 			if err != nil {
-				return
+				return Error("Failed to remove network with name <%s>: %s", name, err)
 			}
 		}
 	}
-	return nil
+	return
 }
 
 func createNetwork(ctx *context.Context, cli *client.Client, name string, driverName string) (id string, err error) {
@@ -32,6 +32,7 @@ func createNetwork(ctx *context.Context, cli *client.Client, name string, driver
 		Driver: driverName,
 	})
 	if err != nil {
+		err = Error("Failed to create network: %s", err)
 		return
 	}
 	id = network.ID

@@ -4,8 +4,6 @@ import (
 	"archive/tar"
 	"bytes"
 	"context"
-	"errors"
-	"fmt"
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
@@ -28,7 +26,7 @@ func injectFile(ctx *context.Context, cli *client.Client, id string, srcPath str
 	var absPath string
 	absPath, err = filepath.Abs(dstPath)
 	if err != nil {
-		return fmt.Errorf("Failed to obtain absolute path for path <%s> (source <%s>): %s", dstPath, srcPath, err)
+		return Error("Failed to obtain absolute path for path <%s> (source <%s>): %s", dstPath, srcPath, err)
 	}
 
 	var dstInfo archive.CopyInfo
@@ -38,7 +36,7 @@ func injectFile(ctx *context.Context, cli *client.Client, id string, srcPath str
 
 	dstStat, err = cli.ContainerStatPath(*ctx, id, dstPath)
 	if err != nil {
-		return fmt.Errorf("Failed to stat destination path <%s> (source <%s>): %s", dstPath, srcPath, err)
+		return Error("Failed to stat destination path <%s> (source <%s>): %s", dstPath, srcPath, err)
 	}
 	if dstStat.Mode&os.ModeSymlink != 0 {
 		linkTarget := dstStat.LinkTarget
@@ -53,20 +51,20 @@ func injectFile(ctx *context.Context, cli *client.Client, id string, srcPath str
 
 	err = command.ValidateOutputPathFileMode(dstStat.Mode)
 	if err != nil {
-		return fmt.Errorf("Destination <%s> must be a directory or regular file", dstPath)
+		return Error("Destination <%s> must be a directory or regular file", dstPath)
 	}
 	dstInfo.Exists, dstInfo.IsDir = true, dstStat.Mode.IsDir()
 
 	var srcInfo archive.CopyInfo
 	srcInfo, err = archive.CopyInfoSourcePath(srcPath, true)
 	if err != nil {
-		return fmt.Errorf("Failed to get source info for path <%s>: %s", srcPath, err)
+		return Error("Failed to get source info for path <%s>: %s", srcPath, err)
 	}
 
 	var srcArchive io.ReadCloser
 	srcArchive, err = archive.TarResource(srcInfo)
 	if err != nil {
-		return fmt.Errorf("Failed to create tar resource for path <%s>: %s", srcPath, err)
+		return Error("Failed to create tar resource for path <%s>: %s", srcPath, err)
 	}
 	defer srcArchive.Close()
 
@@ -74,7 +72,7 @@ func injectFile(ctx *context.Context, cli *client.Client, id string, srcPath str
 	var content io.ReadCloser
 	dstDir, content, err = archive.PrepareArchiveCopy(srcArchive, srcInfo, dstInfo)
 	if err != nil {
-		return fmt.Errorf("Failed to prepare archive reader for path <%s>: %s", srcPath, err)
+		return Error("Failed to prepare archive reader for path <%s>: %s", srcPath, err)
 	}
 	defer content.Close()
 
@@ -82,7 +80,7 @@ func injectFile(ctx *context.Context, cli *client.Client, id string, srcPath str
 		AllowOverwriteDirWithFile: false,
 	})
 	if err != nil {
-		return fmt.Errorf("Failed to copy to container for path <%s> (source <%s>): %s", dstDir, srcPath, err)
+		return Error("Failed to copy to container for path <%s> (source <%s>): %s", dstDir, srcPath, err)
 	}
 
 	return
@@ -95,7 +93,7 @@ func createFile(ctx *context.Context, cli *client.Client, id string, name string
 	content, writer := io.Pipe()
 	dataBytes, err = ioutil.ReadAll(bytes.NewBufferString(data))
 	if err != nil {
-		return fmt.Errorf("Failed to convert content to bytes for file <%s>: %s", name, err)
+		return Error("Failed to convert content to bytes for file <%s>: %s", name, err)
 	}
 	t := tar.NewWriter(writer)
 	go func() {
@@ -116,7 +114,7 @@ func createFile(ctx *context.Context, cli *client.Client, id string, name string
 		AllowOverwriteDirWithFile: false,
 	})
 	if err != nil {
-		return fmt.Errorf("Failed to copy to container for path <%s>: %s", dir, err)
+		return Error("Failed to copy to container for path <%s>: %s", dir, err)
 	}
 
 	return
@@ -124,28 +122,34 @@ func createFile(ctx *context.Context, cli *client.Client, id string, name string
 
 func copyFilesToContainer(ctx *context.Context, cli *client.Client, id string, files []File, destination string) (err error) {
 	for _, file := range files {
-		if len(file.Inject) > 0 && len(file.Content) == 0 {
-			var matches []string
-			matches, err = filepath.Glob(file.Inject)
-			if err != nil {
-				message := fmt.Sprintf("Unable to glob file <%s>", file.Inject)
-				log.Error(message)
-				err = errors.New(message)
-				return
-			}
-			if len(matches) == 0 {
-				message := fmt.Sprintf("No file matches glob <%s>", file.Inject)
-				log.Error(message)
-				err = errors.New(message)
-				return
-			}
-
-			for _, match := range matches {
-				err = injectFile(ctx, cli, id, match, destination)
+		if len(file.Inject) > 0 {
+			if len(file.Content) == 0 {
+				var matches []string
+				matches, err = filepath.Glob(file.Inject)
 				if err != nil {
-					message := fmt.Sprintf("Failed to inject file <%s>: %s", match, err)
-					log.Error(message)
-					err = errors.New(message)
+					err = Error("Unable to glob file <%s>", file.Inject)
+					return
+				}
+				if len(matches) == 0 {
+					err = Error("No file matches glob <%s>", file.Inject)
+					return
+				}
+
+				for _, match := range matches {
+					log.Debugf("Injecting file <%s>", match)
+					err = injectFile(ctx, cli, id, match, destination)
+					if err != nil {
+						err = Error("Failed to inject file <%s>: %s", match, err)
+						return
+					}
+				}
+
+			} else {
+				log.Debugf("Creating file <%s>", file.Inject)
+				err = createFile(ctx, cli, id, file.Inject, file.Content, destination)
+				if err != nil {
+					err = Error("Failed to create file <%s>: %s", file.Inject, err)
+					return
 				}
 			}
 		}
@@ -163,18 +167,14 @@ func copyFilesFromContainer(ctx *context.Context, cli *client.Client, id string,
 			var absPath string
 			absPath, err = filepath.Abs(dstPath)
 			if err != nil {
-				message := fmt.Sprintf("Failed to obtain absolute path for path <%s> (source <%s>): %s", dstPath, srcPath, err)
-				log.Error(message)
-				err = errors.New(message)
+				err = Error("Failed to obtain absolute path for path <%s> (source <%s>): %s", dstPath, srcPath, err)
 				return
 			}
 			dstPath = archive.PreserveTrailingDotOrSeparator(absPath, dstPath, filepath.Separator)
 
 			err = command.ValidateOutputPath(dstPath)
 			if err != nil {
-				message := fmt.Sprintf("Failed to validate path <%s>: %s", dstPath, err)
-				log.Error(message)
-				err = errors.New(message)
+				err = Error("Failed to validate path <%s>: %s", dstPath, err)
 				return
 			}
 
@@ -183,9 +183,7 @@ func copyFilesFromContainer(ctx *context.Context, cli *client.Client, id string,
 			var srcStat types.ContainerPathStat
 			srcStat, err = cli.ContainerStatPath(*ctx, id, srcPath)
 			if err != nil {
-				message := fmt.Sprintf("Failed to stat destination path <%s> (source <%s>): %s", dstPath, srcPath, err)
-				log.Error(message)
-				err = errors.New(message)
+				err = Error("Failed to stat destination path <%s> (source <%s>): %s", dstPath, srcPath, err)
 				return
 			}
 			if srcStat.Mode&os.ModeSymlink != 0 {
@@ -204,9 +202,7 @@ func copyFilesFromContainer(ctx *context.Context, cli *client.Client, id string,
 			var stat types.ContainerPathStat
 			content, stat, err = cli.CopyFromContainer(*ctx, id, srcPath)
 			if err != nil {
-				message := fmt.Sprintf("Failed to copy from container from path <%s>: %s", srcPath, err)
-				log.Error(message)
-				err = errors.New(message)
+				err = Error("Failed to copy from container from path <%s>: %s", srcPath, err)
 				return
 			}
 			defer content.Close()
@@ -225,9 +221,7 @@ func copyFilesFromContainer(ctx *context.Context, cli *client.Client, id string,
 			}
 			err = archive.CopyTo(preArchive, srcInfo, dstPath)
 			if err != nil {
-				message := fmt.Sprintf("Failed to write to disk for path <%s>: %s", dstPath, err)
-				log.Error(message)
-				err = errors.New(message)
+				err = Error("Failed to write to disk for path <%s>: %s", dstPath, err)
 				return
 			}
 		}
