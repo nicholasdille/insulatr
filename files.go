@@ -33,7 +33,9 @@ func injectFiles(ctx *context.Context, cli *client.Client, files []File, Working
 		filesToInject,
 	)
 	if err != nil {
-		err = fmt.Errorf("Failed to run container: %s", err)
+		message := fmt.Sprintf("Failed to run container: %s", err)
+		log.Error(message)
+		err = errors.New(message)
 		return
 	}
 
@@ -66,7 +68,9 @@ func extractFiles(ctx *context.Context, cli *client.Client, files []File, Workin
 		filesToExtract,
 	)
 	if err != nil {
-		err = fmt.Errorf("Failed to run container: %s", err)
+		message := fmt.Sprintf("Failed to run container: %s", err)
+		log.Error(message)
+		err = errors.New(message)
 		return
 	}
 

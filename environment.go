@@ -18,7 +18,9 @@ func expandGlobalEnvironment(build *Build) (err error) {
 				}
 			}
 			if !FoundMatch {
-				return fmt.Errorf("Unable to find match for environment variable <%s> for global environment", envVarDef)
+				message := fmt.Sprintf("Unable to find match for environment variable <%s> for global environment", envVarDef)
+				log.Error(message)
+				return errors.New(message)
 			}
 		}
 	}
