@@ -12,15 +12,15 @@ import (
 
 // Settings is used to import from YaML
 type Settings struct {
-	VolumeName       string        `yaml:"volume_name"`
-	VolumeDriver     string        `yaml:"volume_driver"`
-	WorkingDirectory string        `yaml:"working_directory"`
-	Shell            []string      `yaml:"shell"`
-	NetworkName      string        `yaml:"network_name"`
-	NetworkDriver    string        `yaml:"network_driver"`
-	Timeout          int           `yaml:"timeout"`
-	LogDirectory     string        `yaml:"log_directory"`
-	ConsoleLogLevel  logging.Level `yaml:"console_log_level"`
+	VolumeName       string   `yaml:"volume_name"`
+	VolumeDriver     string   `yaml:"volume_driver"`
+	WorkingDirectory string   `yaml:"working_directory"`
+	Shell            []string `yaml:"shell"`
+	NetworkName      string   `yaml:"network_name"`
+	NetworkDriver    string   `yaml:"network_driver"`
+	Timeout          int      `yaml:"timeout"`
+	LogDirectory     string   `yaml:"log_directory"`
+	ConsoleLogLevel  string   `yaml:"console_log_level"`
 }
 
 // Repository is used to import from YaML
@@ -85,7 +85,7 @@ func defaults() *Build {
 			NetworkName:      "mynetwork",
 			NetworkDriver:    "bridge",
 			LogDirectory:     "logs",
-			ConsoleLogLevel:  logging.INFO,
+			ConsoleLogLevel:  "NOTICE",
 		},
 	}
 }
@@ -95,19 +95,29 @@ var FileFormat = logging.MustStringFormatter(
     `%{time:2006-01-02T15:04:05.999Z-07:00} %{level:.7s} %{message}`,
 )
 var ConsoleFormat = logging.MustStringFormatter(
-    `%{color}%{time:15:04:05} %{level:.7s} %{message}%{color:reset}`,
+    `%{color}%{time:15:04:05} %{message}%{color:reset}`,
 )
 
-func prepareLogging(FileWriter io.Writer) {
-    FileBackend    := logging.NewLogBackend(FileWriter, "", 0)
+func prepareLogging(ConsoleLogLevelString string, FileWriter io.Writer) {
+	var ConsoleLogLevel logging.Level
+	switch ConsoleLogLevelString {
+	case "DEBUG":
+		ConsoleLogLevel = logging.DEBUG
+	case "NOTICE":
+		ConsoleLogLevel = logging.NOTICE
+	case "INFO":
+		ConsoleLogLevel = logging.INFO
+	}
+
+	FileBackend    := logging.NewLogBackend(FileWriter, "", 0)
 	FileBackendFormatter := logging.NewBackendFormatter(FileBackend, FileFormat)
     FileBackendLeveled := logging.AddModuleLevel(FileBackendFormatter)
     FileBackendLeveled.SetLevel(logging.INFO, "")
 
     ConsoleBackend := logging.NewLogBackend(os.Stdout, "", 0)
 	ConsoleBackendFormatter := logging.NewBackendFormatter(ConsoleBackend, ConsoleFormat)
-    ConsoleBackendLeveled := logging.AddModuleLevel(ConsoleBackendFormatter)
-    ConsoleBackendLeveled.SetLevel(logging.DEBUG, "")
+	ConsoleBackendLeveled := logging.AddModuleLevel(ConsoleBackendFormatter)
+    ConsoleBackendLeveled.SetLevel(ConsoleLogLevel, "")
     
 	logging.SetBackend(FileBackendLeveled, ConsoleBackendLeveled)
 }
@@ -127,7 +137,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
     if err != nil {
 		return Error("Failed to open file: ", err)
     }
-	prepareLogging(FileWriter)
+	prepareLogging(build.Settings.ConsoleLogLevel, FileWriter)
 	log.Noticef("Running insulatr version %s built at %s from %s\n", Version, BuildTime, GitCommit)
 
 	if len(build.Repositories) > 1 {

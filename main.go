@@ -10,15 +10,16 @@ import (
 
 type argT struct {
 	cli.Helper
-	File            string `cli:"f,file"            usage:"Build definition file"                        dft:"./insulatr.yaml"`
-	ReuseVolume     bool   `cli:"reuse-volume"      usage:"Use existing volume"                          dft:"false"`
-	RemoveVolume    bool   `cli:"remove-volume"     usage:"Remove existing volume"                       dft:"false"`
-	ReuseNetwork    bool   `cli:"reuse-network"     usage:"Use existing network"                         dft:"false"`
-	RemoveNetwork   bool   `cli:"remove-network"    usage:"Remove existing network"                      dft:"false"`
-	Reuse           bool   `cli:"reuse"             usage:"Same as --reuse-volume and --reuse-network"   dft:"false"`
-	Remove          bool   `cli:"remove"            usage:"Same as --remove-volume and --remove-network" dft:"false"`
-	AllowDockerSock bool   `cli:"allow-docker-sock" usage:"Allow docker socket in build steps"           dft:"false"`
-	AllowPrivileged bool   `cli:"allow-privileged"  usage:"Allow privileged container for services"      dft:"false"`
+	File            string `cli:"f,file"              usage:"Build definition file"                        dft:"./insulatr.yaml"`
+	ReuseVolume     bool   `cli:"reuse-volume"        usage:"Use existing volume"                          dft:"false"`
+	RemoveVolume    bool   `cli:"remove-volume"       usage:"Remove existing volume"                       dft:"false"`
+	ReuseNetwork    bool   `cli:"reuse-network"       usage:"Use existing network"                         dft:"false"`
+	RemoveNetwork   bool   `cli:"remove-network"      usage:"Remove existing network"                      dft:"false"`
+	Reuse           bool   `cli:"reuse"               usage:"Same as --reuse-volume and --reuse-network"   dft:"false"`
+	Remove          bool   `cli:"remove"              usage:"Same as --remove-volume and --remove-network" dft:"false"`
+	AllowDockerSock bool   `cli:"allow-docker-sock"   usage:"Allow docker socket in build steps"           dft:"false"`
+	AllowPrivileged bool   `cli:"allow-privileged"    usage:"Allow privileged container for services"      dft:"false"`
+	ConsoleLogLevel string `cli:"l,console-log-level" usage:"Controls the log level on the console"`
 }
 
 // GitCommit will be filled from build flags
@@ -40,7 +41,6 @@ func main() {
 	if len(Version) == 0 {
 		Version = "UNKNOWN"
 	}
-	fmt.Printf("Running insulatr version %s built at %s from %s\n", Version, BuildTime, GitCommit)
 
 	os.Exit(cli.Run(new(argT), func(ctx *cli.Context) error {
 		argv := ctx.Argv().(*argT)
@@ -72,6 +72,15 @@ func main() {
 			(argv.ReuseVolume && argv.RemoveVolume) ||
 			(argv.ReuseNetwork && argv.RemoveNetwork) {
 			fmt.Fprintf(os.Stderr, "Error: Cannot reuse volume/network if instructed to remove them.\n")
+			os.Exit(1)
+		}
+
+		switch argv.ConsoleLogLevel {
+		case "DEBUG", "NOTICE", "INFO":
+			build.Settings.ConsoleLogLevel = argv.ConsoleLogLevel
+		case "":
+		default:
+			fmt.Fprintf(os.Stderr, "Console log level must be DEBUG, NOTICE or INFO (got: %s)\n", argv.ConsoleLogLevel)
 			os.Exit(1)
 		}
 
