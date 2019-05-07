@@ -141,12 +141,6 @@ func copyFilesToContainer(ctx *context.Context, cli *client.Client, id string, f
 					return fmt.Errorf("Failed to inject file <%s>: %s", match, err)
 				}
 			}
-
-		} else {
-			err = createFile(ctx, cli, id, file.Inject, file.Content, destination)
-			if err != nil {
-				return fmt.Errorf("Failed to create file <%s>: %s", file.Inject, err)
-			}
 		}
 	}
 
