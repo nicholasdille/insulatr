@@ -24,6 +24,10 @@ services:
   - name: web
     image: nginx
     suppress_log: true
+  - name: dind
+    image: docker:dind
+    privileged: true
+    suppress_log: true
 
 steps:
   - name: check
