@@ -21,6 +21,10 @@ type Settings struct {
 	Timeout          int      `yaml:"timeout"`
 	LogDirectory     string   `yaml:"log_directory"`
 	ConsoleLogLevel  string   `yaml:"console_log_level"`
+	ReuseVolume      bool     `yaml:"reuse_volume"`
+	RetainVolume     bool     `yaml:"retain_volume"`
+	ReuseNetwork     bool     `yaml:"reuse_network"`
+	RetainNetwork    bool     `yaml:"retain_network"`
 }
 
 // Repository is used to import from YaML
@@ -133,7 +137,7 @@ func Error(format string, a ...interface{}) (err error) {
 	return errors.New(message)
 }
 
-func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, mustRemoveNetwork bool, allowDockerSock bool, allowPrivileged bool) (err error) {
+func run(build *Build, allowDockerSock bool, allowPrivileged bool) (err error) {
 	if _, err := os.Stat(build.Settings.LogDirectory); os.IsNotExist(err) {
 		os.Mkdir(build.Settings.LogDirectory, 0755)
 	}
@@ -164,23 +168,13 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 
 	FailedBuild := false
 
-	if mustRemoveVolume {
+	if !build.Settings.ReuseVolume {
 		log.Debug("########## Remove volume")
 		err = removeVolume(&ctxTimeout, cli, build.Settings.VolumeName)
 		if err != nil {
 			return Error("Failed to remove volume: %s", err)
 		}
-	}
 
-	if mustRemoveNetwork {
-		log.Debug("########## Remove network")
-		err = removeNetwork(&ctxTimeout, cli, build.Settings.NetworkName)
-		if err != nil {
-			return Error("Failed to remove network: %s", err)
-		}
-	}
-
-	if !mustReuseVolume {
 		log.Debug("########## Create volume")
 		err := createVolume(&ctxTimeout, cli, build.Settings.VolumeName, build.Settings.VolumeDriver)
 		if err != nil {
@@ -189,7 +183,13 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 		log.Debugf("Volume name: %s", build.Settings.VolumeName)
 	}
 
-	if !FailedBuild && !mustReuseNetwork {
+	if !FailedBuild && !build.Settings.ReuseNetwork {
+		log.Debug("########## Remove network")
+		err = removeNetwork(&ctxTimeout, cli, build.Settings.NetworkName)
+		if err != nil {
+			return Error("Failed to remove network: %s", err)
+		}
+		
 		log.Debug("########## Create network")
 		newNetworkID, err := createNetwork(&ctxTimeout, cli, build.Settings.NetworkName, build.Settings.NetworkDriver)
 		if err != nil {
@@ -330,7 +330,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 		}
 	}
 
-	if !mustReuseNetwork {
+	if !build.Settings.RetainNetwork {
 		log.Debug("########## Removing network")
 		err := removeNetwork(&ctx, cli, build.Settings.NetworkName)
 		if err != nil {
@@ -338,7 +338,7 @@ func run(build *Build, mustReuseVolume, mustRemoveVolume, mustReuseNetwork, must
 		}
 	}
 
-	if !mustReuseVolume {
+	if !build.Settings.RetainVolume {
 		log.Debug("########## Removing volume")
 		err := removeVolume(&ctx, cli, build.Settings.VolumeName)
 		if err != nil {

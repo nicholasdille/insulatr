@@ -12,11 +12,11 @@ type argT struct {
 	cli.Helper
 	File            string `cli:"f,file"              usage:"Build definition file"                        dft:"./insulatr.yaml"`
 	ReuseVolume     bool   `cli:"reuse-volume"        usage:"Use existing volume"                          dft:"false"`
-	RemoveVolume    bool   `cli:"remove-volume"       usage:"Remove existing volume"                       dft:"false"`
+	RetainVolume    bool   `cli:"retain-volume"       usage:"Retain volume after build"                    dft:"false"`
 	ReuseNetwork    bool   `cli:"reuse-network"       usage:"Use existing network"                         dft:"false"`
-	RemoveNetwork   bool   `cli:"remove-network"      usage:"Remove existing network"                      dft:"false"`
+	RetainNetwork   bool   `cli:"retain-network"      usage:"Retain network after build"                   dft:"false"`
 	Reuse           bool   `cli:"reuse"               usage:"Same as --reuse-volume and --reuse-network"   dft:"false"`
-	Remove          bool   `cli:"remove"              usage:"Same as --remove-volume and --remove-network" dft:"false"`
+	Retain          bool   `cli:"retain"              usage:"Same as --retain-volume and --retain-network" dft:"false"`
 	AllowDockerSock bool   `cli:"allow-docker-sock"   usage:"Allow docker socket in build steps"           dft:"false"`
 	AllowPrivileged bool   `cli:"allow-privileged"    usage:"Allow privileged container for services"      dft:"false"`
 	ConsoleLogLevel string `cli:"l,console-log-level" usage:"Controls the log level on the console"`
@@ -67,12 +67,21 @@ func main() {
 			argv.ReuseVolume = true
 			argv.ReuseNetwork = true
 		}
-
-		if (argv.Reuse && argv.Remove) ||
-			(argv.ReuseVolume && argv.RemoveVolume) ||
-			(argv.ReuseNetwork && argv.RemoveNetwork) {
-			fmt.Fprintf(os.Stderr, "Error: Cannot reuse volume/network if instructed to remove them.\n")
-			os.Exit(1)
+		if argv.Retain {
+			argv.RetainVolume = true
+			argv.RetainNetwork = true
+		}
+		if argv.ReuseVolume {
+			build.Settings.ReuseVolume = argv.ReuseVolume
+		}
+		if argv.RetainVolume {
+			build.Settings.RetainVolume = argv.RetainVolume
+		}
+		if argv.ReuseNetwork {
+			build.Settings.ReuseNetwork = argv.ReuseNetwork
+		}
+		if argv.RetainNetwork {
+			build.Settings.RetainNetwork = argv.RetainNetwork
 		}
 
 		switch argv.ConsoleLogLevel {
@@ -84,7 +93,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		run(build, argv.ReuseVolume, argv.RemoveVolume, argv.ReuseNetwork, argv.RemoveNetwork, argv.AllowDockerSock, argv.AllowPrivileged)
+		err = run(build, argv.AllowDockerSock, argv.AllowPrivileged)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error building %s: %s\n", argv.File, err)
 			os.Exit(1)
