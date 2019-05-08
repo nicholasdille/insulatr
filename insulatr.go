@@ -157,36 +157,43 @@ func run(build *Build) (err error) {
 	prepareLogging(build.Settings.ConsoleLogLevel, FileWriter)
 	log.Noticef("Running insulatr version %s built at %s from %s\n", Version, BuildTime, GitCommit)
 
-	if len(build.Repositories) > 1 {
-		for _, repo := range build.Repositories {
-			if len(repo.Directory) == 0 || repo.Directory == "." {
-				return Error("All repositories require the directory node to be set (<.> is not allowed)")
-			}
-			repo.WorkingDirectory = build.Settings.WorkingDirectory
-			repo.VolumeName = build.Settings.VolumeName
-		}
+	err = ExpandEnvironment(&build.Environment)
+	if err != nil {
+		return Error("Unable to expand global environment: %s", err)
 	}
-	if len(build.Services) > 1 {
-		for _, service := range build.Services {
-			if service.Privileged && !build.Settings.AllowPrivileged {
-				return Error("Service <%s> requests privileged container but AllowPrivileged was not specified", service.Name)
-			}
-			service.NetworkName = build.Settings.NetworkName
+	for index, repo := range build.Repositories {
+		if len(build.Repositories) > 1 && len(repo.Directory) == 0 || repo.Directory == "." {
+			return Error("All repositories require the directory node to be set (<.> is not allowed)")
 		}
+		build.Repositories[index].WorkingDirectory = build.Settings.WorkingDirectory
+		build.Repositories[index].VolumeName = build.Settings.VolumeName
 	}
-	if len(build.Steps) > 1 {
-		for _, step := range build.Steps {
-			if step.MountDockerSock && !build.Settings.AllowDockerSock {
-				return Error("Build step <%s> requests to mount Docker socket but AllowDockerSock was not specified", step.Name)
-			}
-			if len(step.Shell) == 0 {
-				step.Shell = build.Settings.Shell
-			}
-			if len(step.WorkingDirectory) == 0 {
-				step.WorkingDirectory = build.Settings.WorkingDirectory
-			}
-			step.VolumeName = build.Settings.VolumeName
-			step.NetworkName = build.Settings.NetworkName
+	for index, service := range build.Services {
+		if service.Privileged && !build.Settings.AllowPrivileged {
+			return Error("Service <%s> requests privileged container but AllowPrivileged was not specified", service.Name)
+		}
+		build.Services[index].NetworkName = build.Settings.NetworkName
+		//TODO expand against global and os env separately
+	}
+	for index, step := range build.Steps {
+		if step.MountDockerSock && !build.Settings.AllowDockerSock {
+			return Error("Build step <%s> requests to mount Docker socket but AllowDockerSock was not specified", step.Name)
+		}
+		if len(step.Shell) == 0 {
+			build.Steps[index].Shell = build.Settings.Shell
+		}
+		if len(step.WorkingDirectory) == 0 {
+			build.Steps[index].WorkingDirectory = build.Settings.WorkingDirectory
+		}
+		build.Steps[index].VolumeName = build.Settings.VolumeName
+		build.Steps[index].NetworkName = build.Settings.NetworkName
+		err = MergeEnvironment(build.Environment, &step.Environment)
+		if err != nil {
+			return Error("Unable to merge environment for step <%s>: %s", step.Name, err)
+		}
+		err = ExpandEnvironment(&step.Environment)
+		if err != nil {
+			return Error("Unable to expand environment for step <%s>: %s", step.Name, err)
 		}
 	}
 
