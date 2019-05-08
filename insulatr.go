@@ -25,6 +25,8 @@ type Settings struct {
 	RetainVolume     bool     `yaml:"retain_volume"`
 	ReuseNetwork     bool     `yaml:"reuse_network"`
 	RetainNetwork    bool     `yaml:"retain_network"`
+	AllowPrivileged  bool
+	AllowDockerSock  bool
 }
 
 // Repository is used to import from YaML
@@ -137,7 +139,7 @@ func Error(format string, a ...interface{}) (err error) {
 	return errors.New(message)
 }
 
-func run(build *Build, allowDockerSock bool, allowPrivileged bool) (err error) {
+func run(build *Build) (err error) {
 	if _, err := os.Stat(build.Settings.LogDirectory); os.IsNotExist(err) {
 		os.Mkdir(build.Settings.LogDirectory, 0755)
 	}
@@ -153,6 +155,20 @@ func run(build *Build, allowDockerSock bool, allowPrivileged bool) (err error) {
 		for _, repo := range build.Repositories {
 			if len(repo.Directory) == 0 || repo.Directory == "." {
 				return Error("All repositories require the directory node to be set (<.> is not allowed)")
+			}
+		}
+	}
+	if len(build.Services) > 1 {
+		for _, service := range build.Services {
+			if service.Privileged && !build.Settings.AllowPrivileged {
+				return Error("Service <%s> requests privileged container but AllowPrivileged was not specified", service.Name)
+			}
+		}
+	}
+	if len(build.Steps) > 1 {
+		for _, step := range build.Steps {
+			if step.MountDockerSock && !build.Settings.AllowDockerSock {
+				return Error("Build step <%s> requests to mount Docker socket but AllowDockerSock was not specified", step.Name)
 			}
 		}
 	}

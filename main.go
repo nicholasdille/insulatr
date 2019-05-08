@@ -84,6 +84,9 @@ func main() {
 			build.Settings.RetainNetwork = argv.RetainNetwork
 		}
 
+		build.Settings.AllowPrivileged = argv.AllowPrivileged
+		build.Settings.AllowDockerSock = argv.AllowDockerSock
+
 		switch argv.ConsoleLogLevel {
 		case "DEBUG", "NOTICE", "INFO":
 			build.Settings.ConsoleLogLevel = argv.ConsoleLogLevel
@@ -93,7 +96,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		err = run(build, argv.AllowDockerSock, argv.AllowPrivileged)
+		err = run(build)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error building %s: %s\n", argv.File, err)
 			os.Exit(1)
