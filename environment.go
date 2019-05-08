@@ -6,7 +6,7 @@ import (
 )
 
 func ExpandEnvironment(environment []string) (ExpandedEnvironment []string, err error) {
-	for _, envVarDef := range build.Environment {
+	for _, envVarDef := range environment {
 		if !strings.Contains(envVarDef, "=") {
 			FoundMatch := false
 			for _, envVar := range os.Environ() {
@@ -34,10 +34,10 @@ func MergeEnvironment(GlobalEnvironment []string, LocalEnvironment []string) (Me
 		GlobalPair := strings.Split(GlobalEnv, "=")
 
 		FoundMatch := false
-		for _, LovalEnv := range LocalEnvironment {
+		for _, LocalEnv := range LocalEnvironment {
 			LocalPair := strings.Split(LocalEnv, "=")
 
-			if GlobalPair[0] = LocalPair[0] {
+			if GlobalPair[0] == LocalPair[0] {
 				MergedEnvironment = append(MergedEnvironment, LocalEnv)
 				FoundMatch = true
 			}
