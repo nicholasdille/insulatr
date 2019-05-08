@@ -226,6 +226,7 @@ The `steps` node defines a list of build steps to execute. XXX.
 - `environment` (optional) defines the environment variables passed to the build step.
 - `user` (optional) is a user to execute the commands under.
 - `shell` (optional) overrides the [global `shell` setting](#settings).
+- `working_directory` contains the path under which to mount the volume. If omitted, it is filled from the global setting.
 - `forward_ssh_agent` (optional) enabled bind mounting the SSH agent socket into the build step. It defaults to `false`.
 - `override_entrypoint` (optional) executes the shell as the entrypoint. It defaults to `false`.
 - `mount_docker_sock` (optional) mounts `/var/run/docker.sock` into the container. It defaults to `false`.

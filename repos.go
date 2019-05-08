@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func cloneRepo(ctx *context.Context, cli *client.Client, repo Repository, WorkingDirectory string, VolumeName string) (err error) {
+func cloneRepo(ctx *context.Context, cli *client.Client, repo Repository) (err error) {
 	var ref string
 	if len(repo.Branch) > 0 {
 		ref = repo.Branch
@@ -62,9 +62,9 @@ func cloneRepo(ctx *context.Context, cli *client.Client, repo Repository, Workin
 		[]string{},
 		"",
 		environment,
-		WorkingDirectory,
+		repo.WorkingDirectory,
 		"",
-		VolumeName,
+		repo.VolumeName,
 		bindMounts,
 		false,
 		os.Stdout,
@@ -84,9 +84,9 @@ func cloneRepo(ctx *context.Context, cli *client.Client, repo Repository, Workin
 			[]string{},
 			"",
 			[]string{},
-			WorkingDirectory,
+			repo.WorkingDirectory,
 			"",
-			VolumeName,
+			repo.VolumeName,
 			bindMounts,
 			false,
 			os.Stdout,
@@ -105,9 +105,9 @@ func cloneRepo(ctx *context.Context, cli *client.Client, repo Repository, Workin
 			[]string{},
 			"",
 			[]string{},
-			WorkingDirectory,
+			repo.WorkingDirectory,
 			"",
-			VolumeName,
+			repo.VolumeName,
 			bindMounts,
 			false,
 			os.Stdout,

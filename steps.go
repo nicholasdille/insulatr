@@ -8,11 +8,7 @@ import (
 	"strings"
 )
 
-func runStep(ctx *context.Context, cli *client.Client, step Step, globalEnvironment []string, shell []string, WorkingDirectory string, VolumeName string, NetworkName string) (err error) {
-	if len(step.Shell) == 0 {
-		step.Shell = shell
-	}
-
+func runStep(ctx *context.Context, cli *client.Client, step Step, globalEnvironment []string) (err error) {
 	environment := step.Environment
 	for _, globalEnvVar := range globalEnvironment {
 		environment = append(environment, globalEnvVar)
@@ -71,9 +67,9 @@ func runStep(ctx *context.Context, cli *client.Client, step Step, globalEnvironm
 		step.Commands,
 		step.User,
 		environment,
-		WorkingDirectory,
-		NetworkName,
-		VolumeName,
+		step.WorkingDirectory,
+		step.NetworkName,
+		step.VolumeName,
 		bindMounts,
 		step.OverrideEntrypoint,
 		os.Stdout,

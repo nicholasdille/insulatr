@@ -31,13 +31,15 @@ type Settings struct {
 
 // Repository is used to import from YaML
 type Repository struct {
-	Name      string `yaml:"name"`
-	Location  string `yaml:"location"`
-	Directory string `yaml:"directory"`
-	Shallow   bool   `yaml:"shallow"`
-	Branch    string `yaml:"branch"`
-	Tag       string `yaml:"tag"`
-	Commit    string `yaml:"commit"`
+	Name             string `yaml:"name"`
+	Location         string `yaml:"location"`
+	Directory        string `yaml:"directory"`
+	Shallow          bool   `yaml:"shallow"`
+	Branch           string `yaml:"branch"`
+	Tag              string `yaml:"tag"`
+	Commit           string `yaml:"commit"`
+	WorkingDirectory string
+	VolumeName       string
 }
 
 // Service is used to import from YaML
@@ -47,6 +49,7 @@ type Service struct {
 	Environment []string `yaml:"environment"`
 	SuppressLog bool     `yaml:"suppress_log"`
 	Privileged  bool     `yaml:"privileged"`
+	NetworkName string
 }
 
 // File is used to import from YaML
@@ -68,6 +71,9 @@ type Step struct {
 	Environment        []string `yaml:"environment"`
 	MountDockerSock    bool     `yaml:"mount_docker_sock"`
 	ForwardSSHAgent    bool     `yaml:"forward_ssh_agent"`
+	WorkingDirectory   string   `yaml:"working_directory"`
+	VolumeName         string
+	NetworkName        string
 }
 
 // Build is used to import from YaML
@@ -156,6 +162,8 @@ func run(build *Build) (err error) {
 			if len(repo.Directory) == 0 || repo.Directory == "." {
 				return Error("All repositories require the directory node to be set (<.> is not allowed)")
 			}
+			repo.WorkingDirectory = build.Settings.WorkingDirectory
+			repo.VolumeName = build.Settings.VolumeName
 		}
 	}
 	if len(build.Services) > 1 {
@@ -163,6 +171,7 @@ func run(build *Build) (err error) {
 			if service.Privileged && !build.Settings.AllowPrivileged {
 				return Error("Service <%s> requests privileged container but AllowPrivileged was not specified", service.Name)
 			}
+			service.NetworkName = build.Settings.NetworkName
 		}
 	}
 	if len(build.Steps) > 1 {
@@ -170,6 +179,14 @@ func run(build *Build) (err error) {
 			if step.MountDockerSock && !build.Settings.AllowDockerSock {
 				return Error("Build step <%s> requests to mount Docker socket but AllowDockerSock was not specified", step.Name)
 			}
+			if len(step.Shell) == 0 {
+				step.Shell = build.Settings.Shell
+			}
+			if len(step.WorkingDirectory) == 0 {
+				step.WorkingDirectory = build.Settings.WorkingDirectory
+			}
+			step.VolumeName = build.Settings.VolumeName
+			step.NetworkName = build.Settings.NetworkName
 		}
 	}
 
@@ -240,7 +257,7 @@ func run(build *Build) (err error) {
 				break
 			}
 
-			err = cloneRepo(&ctxTimeout, cli, repo, build.Settings.WorkingDirectory, build.Settings.VolumeName)
+			err = cloneRepo(&ctxTimeout, cli, repo)
 			if err != nil {
 				err = Error("Failed to clone repository <%s>: %s", repo.Name, err)
 				FailedBuild = true
@@ -267,7 +284,7 @@ func run(build *Build) (err error) {
 			}
 
 			var containerID string
-			containerID, err = startService(&ctxTimeout, cli, service, build.Settings.NetworkName, build)
+			containerID, err = startService(&ctxTimeout, cli, service, build)
 			if err != nil {
 				err = Error("Failed to start service <%s>: %s", service.Name, err)
 				FailedBuild = true
@@ -312,7 +329,7 @@ func run(build *Build) (err error) {
 				break
 			}
 
-			err = runStep(&ctxTimeout, cli, step, build.Environment, build.Settings.Shell, build.Settings.WorkingDirectory, build.Settings.VolumeName, build.Settings.NetworkName)
+			err = runStep(&ctxTimeout, cli, step, build.Environment)
 			if err != nil {
 				err = Error("Failed to run build step <%s>: %s", step.Name, err)
 				FailedBuild = true

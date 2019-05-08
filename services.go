@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func startService(ctx *context.Context, cli *client.Client, service Service, NetworkName string, build *Build) (id string, err error) {
+func startService(ctx *context.Context, cli *client.Client, service Service, build *Build) (id string, err error) {
 	for index, envVarDef := range service.Environment {
 		if !strings.Contains(envVarDef, "=") {
 			FoundMatch := false
@@ -31,7 +31,7 @@ func startService(ctx *context.Context, cli *client.Client, service Service, Net
 		cli,
 		service.Image,
 		service.Environment,
-		NetworkName,
+		service.NetworkName,
 		service.Name,
 		service.Privileged,
 	)
