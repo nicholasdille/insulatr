@@ -15,6 +15,23 @@ import (
 	"strings"
 )
 
+func ReadContainerLogs(reader io.Reader, logWriter io.Writer) (err error) {
+	hdr := make([]byte, 8)
+	for {
+		_, err := reader.Read(hdr)
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			return Error("Failed to reader log header: %s", err)
+		}
+		count := binary.BigEndian.Uint32(hdr[4:])
+		dat := make([]byte, count)
+		_, err = reader.Read(dat)
+		logWriter.Write(dat)
+	}
+}
+
 func runForegroundContainer(ctx *context.Context, cli *client.Client, image string, shell []string, commands []string, user string, environment []string, dir string, network string, volume string, binds []mount.Mount, overrideEntrypoint bool, logWriter io.Writer, files []File) (err error) {
 	Failed := false
 
@@ -133,19 +150,7 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 			Failed = true
 
 		} else {
-			go func() {
-				hdr := make([]byte, 8)
-				for {
-					_, err := reader.Read(hdr)
-					if err != nil {
-						return
-					}
-					count := binary.BigEndian.Uint32(hdr[4:])
-					dat := make([]byte, count)
-					_, err = reader.Read(dat)
-					logWriter.Write(dat)
-				}
-			}()
+			go ReadContainerLogs(reader, logWriter)
 		}
 	}
 
@@ -260,6 +265,7 @@ func stopAndRemoveContainer(ctx *context.Context, cli *client.Client, containerI
 		return
 	}
 
+	Failed := false
 	var reader io.ReadCloser
 	reader, err = cli.ContainerLogs(*ctx, containerID, types.ContainerLogsOptions{
 		ShowStdout: true,
@@ -267,30 +273,24 @@ func stopAndRemoveContainer(ctx *context.Context, cli *client.Client, containerI
 	})
 	if err != nil {
 		err = Error("Failed to connect to container logs: %s", err)
-		return
+		Failed = true
 	}
-	if logWriter != nil {
-		hdr := make([]byte, 8)
-		for {
-			_, err = reader.Read(hdr)
-			if err != nil {
-				if err == io.EOF {
-					break
-				}
-				err = Error("Failed to read header from container logs: %s", err)
-				return
-			}
-			count := binary.BigEndian.Uint32(hdr[4:])
-			dat := make([]byte, count)
-			_, err = reader.Read(dat)
-			logWriter.Write(dat)
+	if !Failed && logWriter != nil {
+		err = ReadContainerLogs(reader, logWriter)
+		if err != nil {
+			err = Error("Failed to read container logs: %s", err)
+			return
 		}
 	}
 
-	err = cli.ContainerRemove(*ctx, containerID, types.ContainerRemoveOptions{})
-	if err != nil {
-		err = Error("Error: Failed to remove container <%s>", containerID)
-		return
+	err2 := cli.ContainerRemove(*ctx, containerID, types.ContainerRemoveOptions{})
+	if err2 != nil {
+		err2 = Error("Error: Failed to remove container <%s>", containerID)
+
+		if !Failed {
+			err = err2
+			Failed = true
+		}
 	}
 
 	return nil
