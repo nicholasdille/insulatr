@@ -17,38 +17,41 @@ import (
 )
 
 // ReadContainerLogs parses the container logs provided by the Docker Engine
-func ReadContainerLogs(reader io.Reader, logWriter io.Writer) (err error) {
-	hdr := make([]byte, 8)
+func ReadContainerLogs(Reader io.Reader, LogWriter io.Writer) (err error) {
+	Header := make([]byte, 8)
 	for {
-		_, err := reader.Read(hdr)
+		_, err := Reader.Read(Header)
 		if err != nil {
 			if err == io.EOF {
 				return nil
 			}
 			return Error("Failed to reader log header: %s", err)
 		}
-		count := binary.BigEndian.Uint32(hdr[4:])
-		dat := make([]byte, count)
-		_, err = reader.Read(dat)
-		logWriter.Write(dat)
+		Count := binary.BigEndian.Uint32(Header[4:])
+		Data := make([]byte, Count)
+		_, err = Reader.Read(Data)
+		if err != nil {
+			return Error("Failed to read log data: %s", err)
+		}
+		LogWriter.Write(Data)
 	}
 }
 
 // MapSSHAgentSocket updates environment variables and bind mounts to map the SSH agent socket into a container
-func MapSSHAgentSocket(environment *[]string, mounts *[]mount.Mount) (err error) {
-	for _, envVar := range os.Environ() {
-		pair := strings.Split(envVar, "=")
-		if pair[0] == "SSH_AUTH_SOCK" {
-			*environment = append(
-				*environment,
-				envVar,
+func MapSSHAgentSocket(Environment *[]string, Mounts *[]mount.Mount) (err error) {
+	for _, EnvVar := range os.Environ() {
+		Pair := strings.Split(EnvVar, "=")
+		if Pair[0] == "SSH_AUTH_SOCK" {
+			*Environment = append(
+				*Environment,
+				EnvVar,
 			)
-			*mounts = append(
-				*mounts,
+			*Mounts = append(
+				*Mounts,
 				mount.Mount{
 					Type:   mount.TypeBind,
-					Source: pair[1],
-					Target: pair[1],
+					Source: Pair[1],
+					Target: Pair[1],
 				},
 			)
 			return
@@ -57,7 +60,7 @@ func MapSSHAgentSocket(environment *[]string, mounts *[]mount.Mount) (err error)
 	return Error("Unable to environment variable SSH_AUTH_SOCK: %s", "")
 }
 
-func runForegroundContainer(ctx *context.Context, cli *client.Client, image string, shell []string, commands []string, user string, environment []string, dir string, network string, volume string, binds []mount.Mount, overrideEntrypoint bool, logWriter io.Writer, files []File) (err error) {
+func RunForegroundContainer(ctx *context.Context, cli *client.Client, image string, shell []string, commands []string, user string, environment []string, dir string, network string, volume string, binds []mount.Mount, overrideEntrypoint bool, logWriter io.Writer, files []File) (err error) {
 	Failed := false
 
 	// pull image
@@ -125,7 +128,7 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 	ContainerID := resp.ID
 
 	// Inject files
-	err = copyFilesToContainer(ctx, cli, ContainerID, files, dir)
+	err = CopyFilesToContainer(ctx, cli, ContainerID, files, dir)
 	if err != nil {
 		err = Error("Failed to inject files: %s", err)
 		Failed = true
@@ -207,7 +210,7 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 
 	// Extract files
 	if !Failed {
-		err = copyFilesFromContainer(ctx, cli, ContainerID, files, dir)
+		err = CopyFilesFromContainer(ctx, cli, ContainerID, files, dir)
 		if err != nil {
 			err = Error("Failed to extract files: %s", err)
 			Failed = true
@@ -228,7 +231,7 @@ func runForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 	return
 }
 
-func runBackgroundContainer(ctx *context.Context, cli *client.Client, image string, environment []string, network string, name string, privileged bool) (id string, err error) {
+func RunBackgroundContainer(ctx *context.Context, cli *client.Client, image string, environment []string, network string, name string, privileged bool) (id string, err error) {
 	// pull image
 	var pullReader io.ReadCloser
 	pullReader, err = cli.ImagePull(*ctx, image, types.ImagePullOptions{})
@@ -248,7 +251,7 @@ func runBackgroundContainer(ctx *context.Context, cli *client.Client, image stri
 	// create container
 	hostConfig := container.HostConfig{}
 	if privileged {
-		log.Warning("Running privileged container.")
+		Log.Warning("Running privileged container.")
 		hostConfig.Privileged = true
 	}
 	endpoints := make(map[string]*dockernetwork.EndpointSettings, 1)
@@ -273,7 +276,7 @@ func runBackgroundContainer(ctx *context.Context, cli *client.Client, image stri
 		return
 	}
 	id = resp.ID
-	log.Debugf("Container ID: %s", id)
+	Log.Debugf("Container ID: %s", id)
 
 	// Start container
 	if err = cli.ContainerStart(*ctx, id, types.ContainerStartOptions{}); err != nil {
@@ -283,7 +286,7 @@ func runBackgroundContainer(ctx *context.Context, cli *client.Client, image stri
 	return
 }
 
-func stopAndRemoveContainer(ctx *context.Context, cli *client.Client, containerID string, logWriter io.Writer) (err error) {
+func StopAndRemoveContainer(ctx *context.Context, cli *client.Client, containerID string, logWriter io.Writer) (err error) {
 	err = cli.ContainerStop(*ctx, containerID, nil)
 	if err != nil {
 		err = Error("Failed to stop container: %s", err)

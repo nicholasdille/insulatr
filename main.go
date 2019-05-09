@@ -50,14 +50,14 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Error: File <%s> does not exist.\n", argv.File)
 			os.Exit(1)
 		}
-		source, err := ioutil.ReadFile(argv.File)
+		Source, err := ioutil.ReadFile(argv.File)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error reading file %s: %s\n", argv.File, err)
 			os.Exit(1)
 		}
 
-		build := defaults()
-		err = yaml.Unmarshal(source, &build)
+		BuildDefinition := GetBuildDefinitionDefaults()
+		err = yaml.Unmarshal(Source, &BuildDefinition)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error parsing YAML: %s\n", err)
 			os.Exit(1)
@@ -72,31 +72,31 @@ func main() {
 			argv.RetainNetwork = true
 		}
 		if argv.ReuseVolume {
-			build.Settings.ReuseVolume = argv.ReuseVolume
+			BuildDefinition.Settings.ReuseVolume = argv.ReuseVolume
 		}
 		if argv.RetainVolume {
-			build.Settings.RetainVolume = argv.RetainVolume
+			BuildDefinition.Settings.RetainVolume = argv.RetainVolume
 		}
 		if argv.ReuseNetwork {
-			build.Settings.ReuseNetwork = argv.ReuseNetwork
+			BuildDefinition.Settings.ReuseNetwork = argv.ReuseNetwork
 		}
 		if argv.RetainNetwork {
-			build.Settings.RetainNetwork = argv.RetainNetwork
+			BuildDefinition.Settings.RetainNetwork = argv.RetainNetwork
 		}
 
-		build.Settings.AllowPrivileged = argv.AllowPrivileged
-		build.Settings.AllowDockerSock = argv.AllowDockerSock
+		BuildDefinition.Settings.AllowPrivileged = argv.AllowPrivileged
+		BuildDefinition.Settings.AllowDockerSock = argv.AllowDockerSock
 
 		switch argv.ConsoleLogLevel {
 		case "DEBUG", "NOTICE", "INFO":
-			build.Settings.ConsoleLogLevel = argv.ConsoleLogLevel
+			BuildDefinition.Settings.ConsoleLogLevel = argv.ConsoleLogLevel
 		case "":
 		default:
 			fmt.Fprintf(os.Stderr, "Console log level must be DEBUG, NOTICE or INFO (got: %s)\n", argv.ConsoleLogLevel)
 			os.Exit(1)
 		}
 
-		err = run(build)
+		err = Run(BuildDefinition)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error building %s: %s\n", argv.File, err)
 			os.Exit(1)

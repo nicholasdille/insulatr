@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-func cloneRepo(ctx *context.Context, cli *client.Client, repo Repository) (err error) {
+func CloneRepo(ctx *context.Context, cli *client.Client, repo Repository) (err error) {
 	var ref string
 	if len(repo.Branch) > 0 {
 		ref = repo.Branch
@@ -19,7 +19,7 @@ func cloneRepo(ctx *context.Context, cli *client.Client, repo Repository) (err e
 		ref = repo.Commit
 	}
 	if len(ref) > 0 {
-		log.Warning("Ignoring shallow because branch was specified.")
+		Log.Warning("Ignoring shallow because branch was specified.")
 		repo.Shallow = false
 	}
 
@@ -42,7 +42,7 @@ func cloneRepo(ctx *context.Context, cli *client.Client, repo Repository) (err e
 		return
 	}
 
-	err = runForegroundContainer(
+	err = RunForegroundContainer(
 		ctx,
 		cli,
 		"alpine/git",
@@ -64,7 +64,7 @@ func cloneRepo(ctx *context.Context, cli *client.Client, repo Repository) (err e
 	}
 
 	if len(ref) > 0 {
-		err = runForegroundContainer(
+		err = RunForegroundContainer(
 			ctx,
 			cli,
 			"alpine/git",
@@ -85,7 +85,7 @@ func cloneRepo(ctx *context.Context, cli *client.Client, repo Repository) (err e
 			return
 		}
 
-		err = runForegroundContainer(
+		err = RunForegroundContainer(
 			ctx,
 			cli,
 			"alpine/git",

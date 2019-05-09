@@ -7,7 +7,7 @@ import (
 	"github.com/docker/docker/client"
 )
 
-func removeVolume(ctx *context.Context, cli *client.Client, name string) (err error) {
+func RemoveVolume(ctx *context.Context, cli *client.Client, name string) (err error) {
 	var result dockervolume.VolumeListOKBody
 	result, err = cli.VolumeList(*ctx, filters.NewArgs())
 	if err != nil {
@@ -24,7 +24,7 @@ func removeVolume(ctx *context.Context, cli *client.Client, name string) (err er
 	return
 }
 
-func createVolume(ctx *context.Context, cli *client.Client, name string, driverName string) (err error) {
+func CreateVolume(ctx *context.Context, cli *client.Client, name string, driverName string) (err error) {
 	_, err = cli.VolumeCreate(*ctx, dockervolume.VolumeCreateBody{
 		Name:   name,
 		Driver: driverName,

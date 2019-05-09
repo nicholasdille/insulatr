@@ -7,7 +7,7 @@ import (
 	"github.com/docker/docker/client"
 )
 
-func removeNetwork(ctx *context.Context, cli *client.Client, name string) (err error) {
+func RemoveNetwork(ctx *context.Context, cli *client.Client, name string) (err error) {
 	var networks []types.NetworkResource
 	networks, err = cli.NetworkList(*ctx, types.NetworkListOptions{
 		Filters: filters.NewArgs(),
@@ -26,7 +26,7 @@ func removeNetwork(ctx *context.Context, cli *client.Client, name string) (err e
 	return
 }
 
-func createNetwork(ctx *context.Context, cli *client.Client, name string, driverName string) (id string, err error) {
+func CreateNetwork(ctx *context.Context, cli *client.Client, name string, driverName string) (id string, err error) {
 	var network types.NetworkCreateResponse
 	network, err = cli.NetworkCreate(*ctx, name, types.NetworkCreate{
 		Driver: driverName,

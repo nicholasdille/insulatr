@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func startService(ctx *context.Context, cli *client.Client, service Service, build *Build) (id string, err error) {
+func StartService(ctx *context.Context, cli *client.Client, service Service, build *Build) (id string, err error) {
 	for index, envVarDef := range service.Environment {
 		if !strings.Contains(envVarDef, "=") {
 			FoundMatch := false
@@ -26,7 +26,7 @@ func startService(ctx *context.Context, cli *client.Client, service Service, bui
 		}
 	}
 
-	id, err = runBackgroundContainer(
+	id, err = RunBackgroundContainer(
 		ctx,
 		cli,
 		service.Image,
@@ -43,7 +43,7 @@ func startService(ctx *context.Context, cli *client.Client, service Service, bui
 	return
 }
 
-func stopService(ctx *context.Context, cli *client.Client, name string, id string, services []Service) (err error) {
+func StopService(ctx *context.Context, cli *client.Client, name string, id string, services []Service) (err error) {
 	var logWriter io.Writer
 	logWriter = os.Stdout
 	var service Service
@@ -55,7 +55,7 @@ func stopService(ctx *context.Context, cli *client.Client, name string, id strin
 	if service.SuppressLog {
 		logWriter = nil
 	}
-	err = stopAndRemoveContainer(ctx, cli, id, logWriter)
+	err = StopAndRemoveContainer(ctx, cli, id, logWriter)
 	if err != nil {
 		err = Error("Failed to stop service <%s> with ID <%s>: %s", name, id, err)
 		return

@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func runStep(ctx *context.Context, cli *client.Client, step Step, globalEnvironment []string) (err error) {
+func RunStep(ctx *context.Context, cli *client.Client, step Step, globalEnvironment []string) (err error) {
 	environment := step.Environment
 	for _, globalEnvVar := range globalEnvironment {
 		environment = append(environment, globalEnvVar)
@@ -32,7 +32,7 @@ func runStep(ctx *context.Context, cli *client.Client, step Step, globalEnvironm
 
 	bindMounts := []mount.Mount{}
 	if step.MountDockerSock {
-		log.Warning("Warning: Mounting Docker socket.")
+		Log.Warning("Warning: Mounting Docker socket.")
 		bindMounts = append(bindMounts, mount.Mount{
 			Type:   mount.TypeBind,
 			Source: "/var/run/docker.sock",
@@ -47,7 +47,7 @@ func runStep(ctx *context.Context, cli *client.Client, step Step, globalEnvironm
 		}
 	}
 
-	err = runForegroundContainer(
+	err = RunForegroundContainer(
 		ctx,
 		cli,
 		step.Image,

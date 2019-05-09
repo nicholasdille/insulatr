@@ -9,7 +9,7 @@ import (
 	"os"
 )
 
-func injectFiles(ctx *context.Context, cli *client.Client, files []File, WorkingDirectory string, VolumeName string) (err error) {
+func InjectFiles(ctx *context.Context, cli *client.Client, files []File, WorkingDirectory string, VolumeName string) (err error) {
 	filesToInject := []File{}
 	for _, file := range files {
 		if len(file.Inject) > 0 {
@@ -17,7 +17,7 @@ func injectFiles(ctx *context.Context, cli *client.Client, files []File, Working
 		}
 	}
 
-	err = runForegroundContainer(
+	err = RunForegroundContainer(
 		ctx,
 		cli,
 		"alpine",
@@ -35,7 +35,7 @@ func injectFiles(ctx *context.Context, cli *client.Client, files []File, Working
 	)
 	if err != nil {
 		message := fmt.Sprintf("Failed to run container: %s", err)
-		log.Error(message)
+		Log.Error(message)
 		err = errors.New(message)
 		return
 	}
@@ -43,7 +43,7 @@ func injectFiles(ctx *context.Context, cli *client.Client, files []File, Working
 	return
 }
 
-func extractFiles(ctx *context.Context, cli *client.Client, files []File, WorkingDirectory string, VolumeName string) (err error) {
+func ExtractFiles(ctx *context.Context, cli *client.Client, files []File, WorkingDirectory string, VolumeName string) (err error) {
 	filesToExtract := []File{}
 	for _, file := range files {
 		if len(file.Extract) > 0 {
@@ -52,7 +52,7 @@ func extractFiles(ctx *context.Context, cli *client.Client, files []File, Workin
 		}
 	}
 
-	err = runForegroundContainer(
+	err = RunForegroundContainer(
 		ctx,
 		cli,
 		"alpine",

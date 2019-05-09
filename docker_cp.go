@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-func injectFile(ctx *context.Context, cli *client.Client, id string, srcPath string, dstPath string) (err error) {
+func InjectFile(ctx *context.Context, cli *client.Client, id string, srcPath string, dstPath string) (err error) {
 	pos := strings.LastIndex(srcPath, "/")
 	if pos > -1 {
 		dstPath = dstPath + "/" + srcPath[0:pos]
@@ -86,7 +86,7 @@ func injectFile(ctx *context.Context, cli *client.Client, id string, srcPath str
 	return
 }
 
-func createFile(ctx *context.Context, cli *client.Client, id string, name string, data string, dir string) (err error) {
+func CreateFile(ctx *context.Context, cli *client.Client, id string, name string, data string, dir string) (err error) {
 	var content io.ReadCloser
 	var dataBytes []byte
 
@@ -120,7 +120,7 @@ func createFile(ctx *context.Context, cli *client.Client, id string, name string
 	return
 }
 
-func copyFilesToContainer(ctx *context.Context, cli *client.Client, id string, files []File, destination string) (err error) {
+func CopyFilesToContainer(ctx *context.Context, cli *client.Client, id string, files []File, destination string) (err error) {
 	for _, file := range files {
 		if len(file.Inject) > 0 {
 			if len(file.Content) == 0 {
@@ -136,8 +136,8 @@ func copyFilesToContainer(ctx *context.Context, cli *client.Client, id string, f
 				}
 
 				for _, match := range matches {
-					log.Debugf("Injecting file <%s>", match)
-					err = injectFile(ctx, cli, id, match, destination)
+					Log.Debugf("Injecting file <%s>", match)
+					err = InjectFile(ctx, cli, id, match, destination)
 					if err != nil {
 						err = Error("Failed to inject file <%s>: %s", match, err)
 						return
@@ -145,8 +145,8 @@ func copyFilesToContainer(ctx *context.Context, cli *client.Client, id string, f
 				}
 
 			} else {
-				log.Debugf("Creating file <%s>", file.Inject)
-				err = createFile(ctx, cli, id, file.Inject, file.Content, destination)
+				Log.Debugf("Creating file <%s>", file.Inject)
+				err = CreateFile(ctx, cli, id, file.Inject, file.Content, destination)
 				if err != nil {
 					err = Error("Failed to create file <%s>: %s", file.Inject, err)
 					return
@@ -158,7 +158,7 @@ func copyFilesToContainer(ctx *context.Context, cli *client.Client, id string, f
 	return
 }
 
-func copyFilesFromContainer(ctx *context.Context, cli *client.Client, id string, files []File, dir string) (err error) {
+func CopyFilesFromContainer(ctx *context.Context, cli *client.Client, id string, files []File, dir string) (err error) {
 	for _, file := range files {
 		if len(file.Extract) > 0 {
 			srcPath := dir + "/" + file.Extract
