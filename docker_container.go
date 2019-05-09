@@ -16,6 +16,7 @@ import (
 	"strings"
 )
 
+// ReadContainerLogs parses the container logs provided by the Docker Engine
 func ReadContainerLogs(reader io.Reader, logWriter io.Writer) (err error) {
 	hdr := make([]byte, 8)
 	for {
@@ -33,6 +34,7 @@ func ReadContainerLogs(reader io.Reader, logWriter io.Writer) (err error) {
 	}
 }
 
+// MapSSHAgentSocket updates environment variables and bind mounts to map the SSH agent socket into a container
 func MapSSHAgentSocket(environment *[]string, mounts *[]mount.Mount) (err error) {
 	for _, envVar := range os.Environ() {
 		pair := strings.Split(envVar, "=")

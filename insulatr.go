@@ -139,6 +139,7 @@ func prepareLogging(ConsoleLogLevelString string, FileWriter io.Writer) {
 	logging.SetBackend(FileBackendLeveled, ConsoleBackendLeveled)
 }
 
+// Error logs an error message and returns an error object
 func Error(format string, a ...interface{}) (err error) {
 	message := fmt.Sprintf(format, a)
 	log.Error(message)
@@ -244,7 +245,7 @@ func run(build *Build) (err error) {
 		if err != nil {
 			return Error("Failed to remove network: %s", err)
 		}
-		
+
 		log.Debug("########## Create network")
 		newNetworkID, err := createNetwork(&ctxTimeout, cli, build.Settings.NetworkName, build.Settings.NetworkDriver)
 		if err != nil {

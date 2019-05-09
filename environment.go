@@ -4,6 +4,7 @@ import (
 	"strings"
 )
 
+// ExpandEnvironment expands variable values from the environment
 func ExpandEnvironment(variables *[]string, environment []string) (err error) {
 	for index, envVarDef := range *variables {
 		if !strings.Contains(envVarDef, "=") {
@@ -25,6 +26,7 @@ func ExpandEnvironment(variables *[]string, environment []string) (err error) {
 	return
 }
 
+// MergeEnvironment merges two sets of environment variables
 func MergeEnvironment(GlobalEnvironment []string, LocalEnvironment *[]string) (err error) {
 	for index, LocalEnv := range *LocalEnvironment {
 		LocalPair := strings.Split(LocalEnv, "=")
