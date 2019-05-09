@@ -46,11 +46,11 @@ Options:
   -h, --help                        display help information
   -f, --file[=./insulatr.yaml]      Build definition file
       --reuse-volume[=false]        Use existing volume
-      --remove-volume[=false]       Remove existing volume
+      --retain-volume[=false]       Retain existing volume
       --reuse-network[=false]       Use existing network
-      --remove-network[=false]      Remove existing network
+      --retain-network[=false]      Retain existing network
       --reuse[=false]               Same as --reuse-volume and --reuse-network
-      --remove[=false]              Same as --remove-volume and --remove-network
+      --remove[=false]              Same as --retain-volume and --retain-network
       --allow-docker-sock[=false]   Allow docker socket in build steps
       --allow-privileged[=false]    Allow privileged container for services
 ```
@@ -101,6 +101,12 @@ The `settings` node defines global configuration options. It supports the follow
 - `network_name` contains the name of the network to connect services as well as build steps with. It defaults to `mynetwork`.
 - `network_driver` specifies the network driver to use. It defaults to `bridge`.
 - `timeout` defines how long to wait (in seconds) for the whole build before failing. It defaults to `3600`.
+- `log_directory` specifies the directory to store logs in. It defaults to `logs`.
+- `console_log_level` controls what level of messages are displayed. Valid values are `NOTICE`, `INFO`, `DEBUG`. IT defaults to `NOTICE`.
+- `reuse_volume` defines whether the volume may be reused if it already exists. It defaults to `false`.
+- `retain_volume` defines whether the volume may not be deleted. It defaults to `false`.
+- `reuse_network` defines whether the network may be reused if it already exists. It defaults to `false`.
+- `retain_network` defines whether the network may not be deleted. It defaults to `false`.
 
 To summarize, the default settings are:
 
@@ -113,6 +119,12 @@ settings:
   network_name: mynetwork
   network_driver: bridge
   timeout: 60
+  log_directory: logs
+  console_log_level: NOTICE
+  reuse_volume: false
+  retain_volume: false
+  reuse_network: false
+  retain_network: false
 ```
 
 ### Environment
@@ -230,6 +242,7 @@ The `steps` node defines a list of build steps to execute. XXX.
 - `forward_ssh_agent` (optional) enabled bind mounting the SSH agent socket into the build step. It defaults to `false`.
 - `override_entrypoint` (optional) executes the shell as the entrypoint. It defaults to `false`.
 - `mount_docker_sock` (optional) mounts `/var/run/docker.sock` into the container. It defaults to `false`.
+- `forward_ssh_agent` (optional) enables mapping of the SSH agent socket into the container. It defaults to `false`.
 
 Typical build steps look like this:
 
