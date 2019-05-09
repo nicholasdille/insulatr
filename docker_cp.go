@@ -139,7 +139,7 @@ func CopyFilesToContainer(ctx *context.Context, cli *client.Client, id string, f
 				}
 
 				for _, match := range matches {
-					Log.Debugf("Injecting file <%s>", match)
+					log.Debugf("Injecting file <%s>", match)
 					err = InjectFile(ctx, cli, id, match, destination)
 					if err != nil {
 						err = Error("Failed to inject file <%s>: %s", match, err)
@@ -148,7 +148,7 @@ func CopyFilesToContainer(ctx *context.Context, cli *client.Client, id string, f
 				}
 
 			} else {
-				Log.Debugf("Creating file <%s>", file.Inject)
+				log.Debugf("Creating file <%s>", file.Inject)
 				err = CreateFile(ctx, cli, id, file.Inject, file.Content, destination)
 				if err != nil {
 					err = Error("Failed to create file <%s>: %s", file.Inject, err)

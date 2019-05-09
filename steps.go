@@ -33,7 +33,7 @@ func RunStep(ctx *context.Context, cli *client.Client, step Step, globalEnvironm
 
 	bindMounts := []mount.Mount{}
 	if step.MountDockerSock {
-		Log.Warning("Warning: Mounting Docker socket.")
+		log.Warning("Warning: Mounting Docker socket.")
 		bindMounts = append(bindMounts, mount.Mount{
 			Type:   mount.TypeBind,
 			Source: "/var/run/docker.sock",

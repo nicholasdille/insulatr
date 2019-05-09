@@ -20,7 +20,7 @@ func CloneRepo(ctx *context.Context, cli *client.Client, repo Repository) (err e
 		ref = repo.Commit
 	}
 	if len(ref) > 0 {
-		Log.Warning("Ignoring shallow because branch was specified.")
+		log.Warning("Ignoring shallow because branch was specified.")
 		repo.Shallow = false
 	}
 

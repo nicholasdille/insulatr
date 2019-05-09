@@ -36,7 +36,7 @@ func InjectFiles(ctx *context.Context, cli *client.Client, files []File, working
 	)
 	if err != nil {
 		message := fmt.Sprintf("Failed to run container: %s", err)
-		Log.Error(message)
+		log.Error(message)
 		err = errors.New(message)
 		return
 	}

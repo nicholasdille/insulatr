@@ -253,7 +253,7 @@ func RunBackgroundContainer(ctx *context.Context, cli *client.Client, image stri
 	// create container
 	hostConfig := container.HostConfig{}
 	if privileged {
-		Log.Warning("Running privileged container.")
+		log.Warning("Running privileged container.")
 		hostConfig.Privileged = true
 	}
 	endpoints := make(map[string]*dockernetwork.EndpointSettings, 1)
@@ -278,7 +278,7 @@ func RunBackgroundContainer(ctx *context.Context, cli *client.Client, image stri
 		return
 	}
 	id = resp.ID
-	Log.Debugf("Container ID: %s", id)
+	log.Debugf("Container ID: %s", id)
 
 	// Start container
 	if err = cli.ContainerStart(*ctx, id, types.ContainerStartOptions{}); err != nil {

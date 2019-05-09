@@ -104,7 +104,7 @@ func GetBuildDefinitionDefaults() *Build {
 }
 
 // Log contains the global logger
-var Log = logging.MustGetLogger("insulatr")
+var log = logging.MustGetLogger("insulatr")
 
 // FileFormat defines the log format for the file backend
 var fileFormat = logging.MustStringFormatter(
@@ -144,7 +144,7 @@ func PrepareLogging(consoleLogLevelString string, fileWriter io.Writer) {
 // Error logs an error message and returns an error object
 func Error(format string, a ...interface{}) (err error) {
 	message := fmt.Sprintf(format, a)
-	Log.Error(message)
+	log.Error(message)
 	return errors.New(message)
 }
 
@@ -159,14 +159,14 @@ func Run(buildDefinition *Build) (err error) {
 		return Error("Failed to open file: ", err)
 	}
 	PrepareLogging(buildDefinition.Settings.ConsoleLogLevel, fileWriter)
-	Log.Noticef("Running insulatr version %s built at %s from %s\n", version, buildTime, gitCommit)
+	log.Noticef("Running insulatr version %s built at %s from %s\n", version, buildTime, gitCommit)
 
 	err = ExpandEnvironment(&buildDefinition.Environment, os.Environ())
 	if err != nil {
 		return Error("Unable to expand global environment: %s", err)
 	}
 	for index, repo := range buildDefinition.Repositories {
-		Log.Debugf("len(buildDefinition.Repositories)=%d.", len(buildDefinition.Repositories))
+		log.Debugf("len(buildDefinition.Repositories)=%d.", len(buildDefinition.Repositories))
 		if len(buildDefinition.Repositories) > 1 {
 			if len(repo.Directory) == 0 || repo.Directory == "." {
 				return Error("All repositories require the directory node to be set (<.> is not allowed)")
@@ -230,38 +230,38 @@ func Run(buildDefinition *Build) (err error) {
 	failedBuild := false
 
 	if !buildDefinition.Settings.ReuseVolume {
-		Log.Debug("########## Remove volume")
+		log.Debug("########## Remove volume")
 		err = RemoveVolume(&ctxTimeout, cli, buildDefinition.Settings.VolumeName)
 		if err != nil {
 			return Error("Failed to remove volume: %s", err)
 		}
 
-		Log.Debug("########## Create volume")
+		log.Debug("########## Create volume")
 		err := CreateVolume(&ctxTimeout, cli, buildDefinition.Settings.VolumeName, buildDefinition.Settings.VolumeDriver)
 		if err != nil {
 			return Error("Failed to create volume: %s", err)
 		}
-		Log.Debugf("Volume name: %s", buildDefinition.Settings.VolumeName)
+		log.Debugf("Volume name: %s", buildDefinition.Settings.VolumeName)
 	}
 
 	if !failedBuild && !buildDefinition.Settings.ReuseNetwork {
-		Log.Debug("########## Remove network")
+		log.Debug("########## Remove network")
 		err = RemoveNetwork(&ctxTimeout, cli, buildDefinition.Settings.NetworkName)
 		if err != nil {
 			return Error("Failed to remove network: %s", err)
 		}
 
-		Log.Debug("########## Create network")
+		log.Debug("########## Create network")
 		newNetworkID, err := CreateNetwork(&ctxTimeout, cli, buildDefinition.Settings.NetworkName, buildDefinition.Settings.NetworkDriver)
 		if err != nil {
 			err = Error("Failed to create network: %s", err)
 			failedBuild = true
 		}
-		Log.Debugf("Network ID: %s", newNetworkID)
+		log.Debugf("Network ID: %s", newNetworkID)
 	}
 
 	if !failedBuild && len(buildDefinition.Repositories) > 0 {
-		Log.Notice("########## Cloning repositories")
+		log.Notice("########## Cloning repositories")
 		for index, repo := range buildDefinition.Repositories {
 			if repo.Name == "" {
 				err = Error("Repository at index <%d> is missing a name", index)
@@ -269,7 +269,7 @@ func Run(buildDefinition *Build) (err error) {
 				break
 			}
 
-			Log.Noticef("########## Cloning repository <%s>", repo.Name)
+			log.Noticef("########## Cloning repository <%s>", repo.Name)
 
 			if repo.Location == "" {
 				err = Error("Repository at index <%d> is missing a location", repo.Name)
@@ -287,7 +287,7 @@ func Run(buildDefinition *Build) (err error) {
 
 	services := make(map[string]string)
 	if !failedBuild && len(buildDefinition.Services) > 0 {
-		Log.Notice("########## Starting services")
+		log.Notice("########## Starting services")
 		for index, service := range buildDefinition.Services {
 			if service.Name == "" {
 				err = Error("Service at index <%d> is missing a name", index)
@@ -295,7 +295,7 @@ func Run(buildDefinition *Build) (err error) {
 				break
 			}
 
-			Log.Noticef("########## Starting service <%s>", service.Name)
+			log.Noticef("########## Starting service <%s>", service.Name)
 
 			if service.Image == "" {
 				err = Error("Service <%s> is missing an image", service.Name)
@@ -316,7 +316,7 @@ func Run(buildDefinition *Build) (err error) {
 	}
 
 	if !failedBuild && len(buildDefinition.Files) > 0 {
-		Log.Notice("########## Injecting files")
+		log.Notice("########## Injecting files")
 
 		if !failedBuild {
 			err = InjectFiles(&ctxTimeout, cli, buildDefinition.Files, buildDefinition.Settings.WorkingDirectory, buildDefinition.Settings.VolumeName)
@@ -328,7 +328,7 @@ func Run(buildDefinition *Build) (err error) {
 	}
 
 	if !failedBuild && len(buildDefinition.Steps) > 0 {
-		Log.Notice("########## Running build steps")
+		log.Notice("########## Running build steps")
 		for index, step := range buildDefinition.Steps {
 			if step.Name == "" {
 				err = Error("Step at index <%d> is missing a name", index)
@@ -341,7 +341,7 @@ func Run(buildDefinition *Build) (err error) {
 				break
 			}
 
-			Log.Noticef("########## running step <%s>", step.Name)
+			log.Noticef("########## running step <%s>", step.Name)
 
 			if len(step.Commands) == 0 {
 				err = Error("Step <%s> is missing commands", step.Name)
@@ -359,7 +359,7 @@ func Run(buildDefinition *Build) (err error) {
 	}
 
 	if !failedBuild && len(buildDefinition.Files) > 0 {
-		Log.Notice("########## Extracting files")
+		log.Notice("########## Extracting files")
 
 		err = ExtractFiles(&ctxTimeout, cli, buildDefinition.Files, buildDefinition.Settings.WorkingDirectory, buildDefinition.Settings.VolumeName)
 		if err != nil {
@@ -370,7 +370,7 @@ func Run(buildDefinition *Build) (err error) {
 
 	if len(services) > 0 {
 		for name, id := range services {
-			Log.Noticef("########## Stopping service %s", name)
+			log.Noticef("########## Stopping service %s", name)
 
 			err = StopService(&ctxTimeout, cli, name, id, buildDefinition.Services)
 			if err != nil {
@@ -384,7 +384,7 @@ func Run(buildDefinition *Build) (err error) {
 	}
 
 	if !buildDefinition.Settings.RetainNetwork {
-		Log.Debug("########## Removing network")
+		log.Debug("########## Removing network")
 		err := RemoveNetwork(&ctx, cli, buildDefinition.Settings.NetworkName)
 		if err != nil {
 			return Error("Failed to remove network: %s", err)
@@ -392,7 +392,7 @@ func Run(buildDefinition *Build) (err error) {
 	}
 
 	if !buildDefinition.Settings.RetainVolume {
-		Log.Debug("########## Removing volume")
+		log.Debug("########## Removing volume")
 		err := RemoveVolume(&ctx, cli, buildDefinition.Settings.VolumeName)
 		if err != nil {
 			return Error("Failed to remove volume: %s", err)
