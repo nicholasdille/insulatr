@@ -40,22 +40,10 @@ func runStep(ctx *context.Context, cli *client.Client, step Step, globalEnvironm
 		})
 	}
 	if step.ForwardSSHAgent {
-		for _, envVar := range os.Environ() {
-			pair := strings.Split(envVar, "=")
-			if pair[0] == "SSH_AUTH_SOCK" {
-				environment = append(
-					environment,
-					envVar,
-				)
-				bindMounts = append(
-					bindMounts,
-					mount.Mount{
-						Type:   mount.TypeBind,
-						Source: pair[1],
-						Target: pair[1],
-					},
-				)
-			}
+		err = MapSSHAgentSocket(&environment, &bindMounts)
+		if err != nil {
+			err = Error("Unable to map SSH agent socket in step <%s>", step.Name)
+			return
 		}
 	}
 

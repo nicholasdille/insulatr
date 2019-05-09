@@ -5,7 +5,6 @@ import (
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	"os"
-	"strings"
 )
 
 func cloneRepo(ctx *context.Context, cli *client.Client, repo Repository) (err error) {
@@ -37,23 +36,12 @@ func cloneRepo(ctx *context.Context, cli *client.Client, repo Repository) (err e
 		"GIT_SSH_COMMAND=ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no",
 	}
 	bindMounts := []mount.Mount{}
-	for _, envVar := range os.Environ() {
-		pair := strings.Split(envVar, "=")
-		if pair[0] == "SSH_AUTH_SOCK" {
-			environment = append(
-				environment,
-				envVar,
-			)
-			bindMounts = append(
-				bindMounts,
-				mount.Mount{
-					Type:   mount.TypeBind,
-					Source: pair[1],
-					Target: pair[1],
-				},
-			)
-		}
+	err = MapSSHAgentSocket(&environment, &bindMounts)
+	if err != nil {
+		err = Error("Unable to map SSH agent socket for repo <%s>", repo.Name)
+		return
 	}
+
 	err = runForegroundContainer(
 		ctx,
 		cli,

@@ -11,6 +11,7 @@ import (
 	dockernetwork "github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"io"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -30,6 +31,28 @@ func ReadContainerLogs(reader io.Reader, logWriter io.Writer) (err error) {
 		_, err = reader.Read(dat)
 		logWriter.Write(dat)
 	}
+}
+
+func MapSSHAgentSocket(environment *[]string, mounts *[]mount.Mount) (err error) {
+	for _, envVar := range os.Environ() {
+		pair := strings.Split(envVar, "=")
+		if pair[0] == "SSH_AUTH_SOCK" {
+			*environment = append(
+				*environment,
+				envVar,
+			)
+			*mounts = append(
+				*mounts,
+				mount.Mount{
+					Type:   mount.TypeBind,
+					Source: pair[1],
+					Target: pair[1],
+				},
+			)
+			return
+		}
+	}
+	return Error("Unable to environment variable SSH_AUTH_SOCK: %s", "")
 }
 
 func runForegroundContainer(ctx *context.Context, cli *client.Client, image string, shell []string, commands []string, user string, environment []string, dir string, network string, volume string, binds []mount.Mount, overrideEntrypoint bool, logWriter io.Writer, files []File) (err error) {
