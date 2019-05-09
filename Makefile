@@ -92,7 +92,7 @@ scp-%: binary ; $(info $(M) Copying to $*)
 	@tar -cz bin/$(PACKAGE) $(BUILDDEF) | ssh $* tar -xvz
 
 ssh-%: scp-% ; $(info $(M) Running remotely on $*)
-	@ssh $* ./bin/$(PACKAGE) --file $(BUILDDEF)
+	@ssh $* ./bin/$(PACKAGE) --file $(BUILDDEF) $(PARAMS)
 
 tag-%: ; $(info $(M) Tagging as $*)
 	@hub tag $*
