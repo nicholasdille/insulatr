@@ -157,7 +157,7 @@ func run(build *Build) (err error) {
 	prepareLogging(build.Settings.ConsoleLogLevel, FileWriter)
 	log.Noticef("Running insulatr version %s built at %s from %s\n", Version, BuildTime, GitCommit)
 
-	err = ExpandEnvironment(&build.Environment)
+	err = ExpandEnvironment(&build.Environment, os.Environ())
 	if err != nil {
 		return Error("Unable to expand global environment: %s", err)
 	}
@@ -165,6 +165,7 @@ func run(build *Build) (err error) {
 		if len(build.Repositories) > 1 && len(repo.Directory) == 0 || repo.Directory == "." {
 			return Error("All repositories require the directory node to be set (<.> is not allowed)")
 		}
+
 		build.Repositories[index].WorkingDirectory = build.Settings.WorkingDirectory
 		build.Repositories[index].VolumeName = build.Settings.VolumeName
 	}
@@ -172,13 +173,23 @@ func run(build *Build) (err error) {
 		if service.Privileged && !build.Settings.AllowPrivileged {
 			return Error("Service <%s> requests privileged container but AllowPrivileged was not specified", service.Name)
 		}
+
 		build.Services[index].NetworkName = build.Settings.NetworkName
-		//TODO expand against global and os env separately
+
+		err = ExpandEnvironment(&service.Environment, build.Environment)
+		if err != nil {
+			return Error("Unable to expand environment for service <%s> against global environment: %s", service.Name, err)
+		}
+		err = ExpandEnvironment(&service.Environment, os.Environ())
+		if err != nil {
+			return Error("Unable to expand environment for service <%s> against process environment: %s", service.Name, err)
+		}
 	}
 	for index, step := range build.Steps {
 		if step.MountDockerSock && !build.Settings.AllowDockerSock {
 			return Error("Build step <%s> requests to mount Docker socket but AllowDockerSock was not specified", step.Name)
 		}
+
 		if len(step.Shell) == 0 {
 			build.Steps[index].Shell = build.Settings.Shell
 		}
@@ -187,13 +198,14 @@ func run(build *Build) (err error) {
 		}
 		build.Steps[index].VolumeName = build.Settings.VolumeName
 		build.Steps[index].NetworkName = build.Settings.NetworkName
+
 		err = MergeEnvironment(build.Environment, &step.Environment)
 		if err != nil {
 			return Error("Unable to merge environment for step <%s>: %s", step.Name, err)
 		}
-		err = ExpandEnvironment(&step.Environment)
+		err = ExpandEnvironment(&step.Environment, os.Environ())
 		if err != nil {
-			return Error("Unable to expand environment for step <%s>: %s", step.Name, err)
+			return Error("Unable to expand environment for step <%s> against process environment: %s", step.Name, err)
 		}
 	}
 
@@ -237,14 +249,6 @@ func run(build *Build) (err error) {
 			FailedBuild = true
 		}
 		log.Debugf("Network ID: %s", newNetworkID)
-	}
-
-	if !FailedBuild {
-		err = expandGlobalEnvironment(build)
-		if err != nil {
-			err = Error("Failed to expand global environment: %s", err)
-			FailedBuild = true
-		}
 	}
 
 	if !FailedBuild && len(build.Repositories) > 0 {

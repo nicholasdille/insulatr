@@ -1,18 +1,17 @@
 package main
 
 import (
-	"os"
 	"strings"
 )
 
-func ExpandEnvironment(environment *[]string) (err error) {
-	for index, envVarDef := range *environment {
+func ExpandEnvironment(variables *[]string, environment []string) (err error) {
+	for index, envVarDef := range *variables {
 		if !strings.Contains(envVarDef, "=") {
 			FoundMatch := false
-			for _, envVar := range os.Environ() {
+			for _, envVar := range environment {
 				pair := strings.Split(envVar, "=")
 				if pair[0] == envVarDef {
-					(*environment)[index] = envVar
+					(*variables)[index] = envVar
 					FoundMatch = true
 				}
 			}
@@ -59,25 +58,5 @@ func MergeEnvironment(GlobalEnvironment []string, LocalEnvironment *[]string) (e
 			*LocalEnvironment = append(*LocalEnvironment, GlobalEnv)
 		}
 	}
-	return
-}
-
-func expandGlobalEnvironment(build *Build) (err error) {
-	for index, envVarDef := range build.Environment {
-		if !strings.Contains(envVarDef, "=") {
-			FoundMatch := false
-			for _, envVar := range os.Environ() {
-				pair := strings.Split(envVar, "=")
-				if pair[0] == envVarDef {
-					build.Environment[index] = envVar
-					FoundMatch = true
-				}
-			}
-			if !FoundMatch {
-				return Error("Unable to find match for environment variable <%s> for global environment", envVarDef)
-			}
-		}
-	}
-
 	return
 }
