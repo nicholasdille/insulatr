@@ -11,15 +11,15 @@ import (
 func StartService(ctx *context.Context, cli *client.Client, service Service, build *Build) (id string, err error) {
 	for index, envVarDef := range service.Environment {
 		if !strings.Contains(envVarDef, "=") {
-			FoundMatch := false
+			foundMatch := false
 			for _, envVar := range build.Environment {
 				pair := strings.Split(envVar, "=")
 				if pair[0] == envVarDef {
 					service.Environment[index] = envVar
-					FoundMatch = true
+					foundMatch = true
 				}
 			}
-			if !FoundMatch {
+			if !foundMatch {
 				err = Error("Unable to find match for environment variable <%s> in service <%s>", envVarDef, service.Name)
 				return
 			}

@@ -8,15 +8,15 @@ import (
 func ExpandEnvironment(variables *[]string, environment []string) (err error) {
 	for index, envVarDef := range *variables {
 		if !strings.Contains(envVarDef, "=") {
-			FoundMatch := false
+			foundMatch := false
 			for _, envVar := range environment {
 				pair := strings.Split(envVar, "=")
 				if pair[0] == envVarDef {
 					(*variables)[index] = envVar
-					FoundMatch = true
+					foundMatch = true
 				}
 			}
-			if !FoundMatch {
+			if !foundMatch {
 				err = Error("Unable to find match for environment variable <%s> for global environment", envVarDef)
 				return
 			}
@@ -27,37 +27,37 @@ func ExpandEnvironment(variables *[]string, environment []string) (err error) {
 }
 
 // MergeEnvironment merges two sets of environment variables
-func MergeEnvironment(GlobalEnvironment []string, LocalEnvironment *[]string) (err error) {
-	for index, LocalEnv := range *LocalEnvironment {
-		LocalPair := strings.Split(LocalEnv, "=")
+func MergeEnvironment(globalEnvironment []string, localEnvironment *[]string) (err error) {
+	for index, localEnv := range *localEnvironment {
+		localPair := strings.Split(localEnv, "=")
 
-		for _, GlobalEnv := range GlobalEnvironment {
-			GlobalPair := strings.Split(GlobalEnv, "=")
+		for _, globalEnv := range globalEnvironment {
+			globalPair := strings.Split(globalEnv, "=")
 
-			if len(GlobalPair) < 2 {
-				err = Error("Global environment variable <%s> has not been expanded", GlobalPair)
+			if len(globalPair) < 2 {
+				err = Error("Global environment variable <%s> has not been expanded", globalPair)
 			}
 
-			if len(LocalPair) == 1 && GlobalPair[0] == LocalPair[0] {
-				(*LocalEnvironment)[index] = GlobalEnv
+			if len(localPair) == 1 && globalPair[0] == localPair[0] {
+				(*localEnvironment)[index] = globalEnv
 			}
 		}
 	}
 
-	for _, GlobalEnv := range GlobalEnvironment {
-		GlobalPair := strings.Split(GlobalEnv, "=")
+	for _, globalEnv := range globalEnvironment {
+		globalPair := strings.Split(globalEnv, "=")
 
-		FoundMatch := false
-		for _, LocalEnv := range *LocalEnvironment {
-			LocalPair := strings.Split(LocalEnv, "=")
+		foundMatch := false
+		for _, localEnv := range *localEnvironment {
+			localPair := strings.Split(localEnv, "=")
 
-			if GlobalPair[0] == LocalPair[0] {
-				FoundMatch = true
+			if globalPair[0] == localPair[0] {
+				foundMatch = true
 			}
 		}
 
-		if !FoundMatch {
-			*LocalEnvironment = append(*LocalEnvironment, GlobalEnv)
+		if !foundMatch {
+			*localEnvironment = append(*localEnvironment, globalEnv)
 		}
 	}
 	return

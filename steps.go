@@ -15,15 +15,15 @@ func RunStep(ctx *context.Context, cli *client.Client, step Step, globalEnvironm
 	}
 	for index, envVarDef := range environment {
 		if !strings.Contains(envVarDef, "=") {
-			FoundMatch := false
+			foundMatch := false
 			for _, envVar := range os.Environ() {
 				pair := strings.Split(envVar, "=")
 				if pair[0] == envVarDef {
 					environment[index] = envVar
-					FoundMatch = true
+					foundMatch = true
 				}
 			}
-			if !FoundMatch {
+			if !foundMatch {
 				err = Error("Unable to find match for environment variable <%s> in build step <%s>", envVarDef, step.Name)
 				return
 			}

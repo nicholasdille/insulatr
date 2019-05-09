@@ -106,37 +106,37 @@ func GetBuildDefinitionDefaults() *Build {
 var Log = logging.MustGetLogger("insulatr")
 
 // FileFormat defines the log format for the file backend
-var FileFormat = logging.MustStringFormatter(
+var fileFormat = logging.MustStringFormatter(
 	`%{time:2006-01-02T15:04:05.999Z-07:00} %{level:.7s} %{message}`,
 )
 
 // ConsoleFormat defines the log format for the console backend
-var ConsoleFormat = logging.MustStringFormatter(
+var consoleFormat = logging.MustStringFormatter(
 	`%{color}%{time:15:04:05} %{message}%{color:reset}`,
 )
 
-func PrepareLogging(ConsoleLogLevelString string, FileWriter io.Writer) {
-	var ConsoleLogLevel logging.Level
-	switch ConsoleLogLevelString {
+func PrepareLogging(consoleLogLevelString string, fileWriter io.Writer) {
+	var consoleLogLevel logging.Level
+	switch consoleLogLevelString {
 	case "DEBUG":
-		ConsoleLogLevel = logging.DEBUG
+		consoleLogLevel = logging.DEBUG
 	case "NOTICE":
-		ConsoleLogLevel = logging.NOTICE
+		consoleLogLevel = logging.NOTICE
 	case "INFO":
-		ConsoleLogLevel = logging.INFO
+		consoleLogLevel = logging.INFO
 	}
 
-	FileBackend := logging.NewLogBackend(FileWriter, "", 0)
-	FileBackendFormatter := logging.NewBackendFormatter(FileBackend, FileFormat)
-	FileBackendLeveled := logging.AddModuleLevel(FileBackendFormatter)
-	FileBackendLeveled.SetLevel(logging.INFO, "")
+	fileBackend := logging.NewLogBackend(fileWriter, "", 0)
+	fileBackendFormatter := logging.NewBackendFormatter(fileBackend, fileFormat)
+	fileBackendLeveled := logging.AddModuleLevel(fileBackendFormatter)
+	fileBackendLeveled.SetLevel(logging.INFO, "")
 
-	ConsoleBackend := logging.NewLogBackend(os.Stdout, "", 0)
-	ConsoleBackendFormatter := logging.NewBackendFormatter(ConsoleBackend, ConsoleFormat)
-	ConsoleBackendLeveled := logging.AddModuleLevel(ConsoleBackendFormatter)
-	ConsoleBackendLeveled.SetLevel(ConsoleLogLevel, "")
+	consoleBackend := logging.NewLogBackend(os.Stdout, "", 0)
+	consoleBackendFormatter := logging.NewBackendFormatter(consoleBackend, consoleFormat)
+	consoleBackendLeveled := logging.AddModuleLevel(consoleBackendFormatter)
+	consoleBackendLeveled.SetLevel(consoleLogLevel, "")
 
-	logging.SetBackend(FileBackendLeveled, ConsoleBackendLeveled)
+	logging.SetBackend(fileBackendLeveled, consoleBackendLeveled)
 }
 
 // Error logs an error message and returns an error object
@@ -146,75 +146,75 @@ func Error(format string, a ...interface{}) (err error) {
 	return errors.New(message)
 }
 
-func Run(BuildDefinition *Build) (err error) {
-	if _, err := os.Stat(BuildDefinition.Settings.LogDirectory); os.IsNotExist(err) {
-		os.Mkdir(BuildDefinition.Settings.LogDirectory, 0755)
+func Run(buildDefinition *Build) (err error) {
+	if _, err := os.Stat(buildDefinition.Settings.LogDirectory); os.IsNotExist(err) {
+		os.Mkdir(buildDefinition.Settings.LogDirectory, 0755)
 	}
 
-	FileWriter, err := os.OpenFile("logs/test.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	fileWriter, err := os.OpenFile("logs/test.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
 		return Error("Failed to open file: ", err)
 	}
-	PrepareLogging(BuildDefinition.Settings.ConsoleLogLevel, FileWriter)
-	Log.Noticef("Running insulatr version %s built at %s from %s\n", Version, BuildTime, GitCommit)
+	PrepareLogging(buildDefinition.Settings.ConsoleLogLevel, fileWriter)
+	Log.Noticef("Running insulatr version %s built at %s from %s\n", version, buildTime, gitCommit)
 
-	err = ExpandEnvironment(&BuildDefinition.Environment, os.Environ())
+	err = ExpandEnvironment(&buildDefinition.Environment, os.Environ())
 	if err != nil {
 		return Error("Unable to expand global environment: %s", err)
 	}
-	for Index, Repo := range BuildDefinition.Repositories {
-		Log.Debugf("len(BuildDefinition.Repositories)=%d.", len(BuildDefinition.Repositories))
-		if len(BuildDefinition.Repositories) > 1 {
-			if len(Repo.Directory) == 0 || Repo.Directory == "." {
+	for index, repo := range buildDefinition.Repositories {
+		Log.Debugf("len(buildDefinition.Repositories)=%d.", len(buildDefinition.Repositories))
+		if len(buildDefinition.Repositories) > 1 {
+			if len(repo.Directory) == 0 || repo.Directory == "." {
 				return Error("All repositories require the directory node to be set (<.> is not allowed)")
 			}
 		}
 
-		BuildDefinition.Repositories[Index].WorkingDirectory = BuildDefinition.Settings.WorkingDirectory
-		BuildDefinition.Repositories[Index].VolumeName = BuildDefinition.Settings.VolumeName
+		buildDefinition.Repositories[index].WorkingDirectory = buildDefinition.Settings.WorkingDirectory
+		buildDefinition.Repositories[index].VolumeName = buildDefinition.Settings.VolumeName
 	}
-	for Index, Service := range BuildDefinition.Services {
-		if Service.Privileged && !BuildDefinition.Settings.AllowPrivileged {
-			return Error("Service <%s> requests privileged container but AllowPrivileged was not specified", Service.Name)
+	for index, service := range buildDefinition.Services {
+		if service.Privileged && !buildDefinition.Settings.AllowPrivileged {
+			return Error("Service <%s> requests privileged container but AllowPrivileged was not specified", service.Name)
 		}
 
-		BuildDefinition.Services[Index].NetworkName = BuildDefinition.Settings.NetworkName
+		buildDefinition.Services[index].NetworkName = buildDefinition.Settings.NetworkName
 
-		err = ExpandEnvironment(&Service.Environment, BuildDefinition.Environment)
+		err = ExpandEnvironment(&service.Environment, buildDefinition.Environment)
 		if err != nil {
-			return Error("Unable to expand environment for service <%s> against global environment: %s", Service.Name, err)
+			return Error("Unable to expand environment for service <%s> against global environment: %s", service.Name, err)
 		}
-		err = ExpandEnvironment(&Service.Environment, os.Environ())
+		err = ExpandEnvironment(&service.Environment, os.Environ())
 		if err != nil {
-			return Error("Unable to expand environment for service <%s> against process environment: %s", Service.Name, err)
+			return Error("Unable to expand environment for service <%s> against process environment: %s", service.Name, err)
 		}
 	}
-	for Index, Step := range BuildDefinition.Steps {
-		if Step.MountDockerSock && !BuildDefinition.Settings.AllowDockerSock {
-			return Error("Build step <%s> requests to mount Docker socket but AllowDockerSock was not specified", Step.Name)
+	for index, step := range buildDefinition.Steps {
+		if step.MountDockerSock && !buildDefinition.Settings.AllowDockerSock {
+			return Error("Build step <%s> requests to mount Docker socket but AllowDockerSock was not specified", step.Name)
 		}
 
-		if len(Step.Shell) == 0 {
-			BuildDefinition.Steps[Index].Shell = BuildDefinition.Settings.Shell
+		if len(step.Shell) == 0 {
+			buildDefinition.Steps[index].Shell = buildDefinition.Settings.Shell
 		}
-		if len(Step.WorkingDirectory) == 0 {
-			BuildDefinition.Steps[Index].WorkingDirectory = BuildDefinition.Settings.WorkingDirectory
+		if len(step.WorkingDirectory) == 0 {
+			buildDefinition.Steps[index].WorkingDirectory = buildDefinition.Settings.WorkingDirectory
 		}
-		BuildDefinition.Steps[Index].VolumeName = BuildDefinition.Settings.VolumeName
-		BuildDefinition.Steps[Index].NetworkName = BuildDefinition.Settings.NetworkName
+		buildDefinition.Steps[index].VolumeName = buildDefinition.Settings.VolumeName
+		buildDefinition.Steps[index].NetworkName = buildDefinition.Settings.NetworkName
 
-		err = MergeEnvironment(BuildDefinition.Environment, &Step.Environment)
+		err = MergeEnvironment(buildDefinition.Environment, &step.Environment)
 		if err != nil {
-			return Error("Unable to merge environment for step <%s>: %s", Step.Name, err)
+			return Error("Unable to merge environment for step <%s>: %s", step.Name, err)
 		}
-		err = ExpandEnvironment(&Step.Environment, os.Environ())
+		err = ExpandEnvironment(&step.Environment, os.Environ())
 		if err != nil {
-			return Error("Unable to expand environment for step <%s> against process environment: %s", Step.Name, err)
+			return Error("Unable to expand environment for step <%s> against process environment: %s", step.Name, err)
 		}
 	}
 
 	ctx := context.Background()
-	ctxTimeout, cancel := context.WithTimeout(ctx, time.Duration(BuildDefinition.Settings.Timeout)*time.Second)
+	ctxTimeout, cancel := context.WithTimeout(ctx, time.Duration(buildDefinition.Settings.Timeout)*time.Second)
 	defer cancel()
 
 	cli, err := CreateDockerClient(&ctxTimeout)
@@ -222,173 +222,173 @@ func Run(BuildDefinition *Build) (err error) {
 		return Error("Unable to create Docker client: %s", err)
 	}
 
-	FailedBuild := false
+	failedBuild := false
 
-	if !BuildDefinition.Settings.ReuseVolume {
+	if !buildDefinition.Settings.ReuseVolume {
 		Log.Debug("########## Remove volume")
-		err = RemoveVolume(&ctxTimeout, cli, BuildDefinition.Settings.VolumeName)
+		err = RemoveVolume(&ctxTimeout, cli, buildDefinition.Settings.VolumeName)
 		if err != nil {
 			return Error("Failed to remove volume: %s", err)
 		}
 
 		Log.Debug("########## Create volume")
-		err := CreateVolume(&ctxTimeout, cli, BuildDefinition.Settings.VolumeName, BuildDefinition.Settings.VolumeDriver)
+		err := CreateVolume(&ctxTimeout, cli, buildDefinition.Settings.VolumeName, buildDefinition.Settings.VolumeDriver)
 		if err != nil {
 			return Error("Failed to create volume: %s", err)
 		}
-		Log.Debugf("Volume name: %s", BuildDefinition.Settings.VolumeName)
+		Log.Debugf("Volume name: %s", buildDefinition.Settings.VolumeName)
 	}
 
-	if !FailedBuild && !BuildDefinition.Settings.ReuseNetwork {
+	if !failedBuild && !buildDefinition.Settings.ReuseNetwork {
 		Log.Debug("########## Remove network")
-		err = RemoveNetwork(&ctxTimeout, cli, BuildDefinition.Settings.NetworkName)
+		err = RemoveNetwork(&ctxTimeout, cli, buildDefinition.Settings.NetworkName)
 		if err != nil {
 			return Error("Failed to remove network: %s", err)
 		}
 
 		Log.Debug("########## Create network")
-		newNetworkID, err := CreateNetwork(&ctxTimeout, cli, BuildDefinition.Settings.NetworkName, BuildDefinition.Settings.NetworkDriver)
+		newNetworkID, err := CreateNetwork(&ctxTimeout, cli, buildDefinition.Settings.NetworkName, buildDefinition.Settings.NetworkDriver)
 		if err != nil {
 			err = Error("Failed to create network: %s", err)
-			FailedBuild = true
+			failedBuild = true
 		}
 		Log.Debugf("Network ID: %s", newNetworkID)
 	}
 
-	if !FailedBuild && len(BuildDefinition.Repositories) > 0 {
+	if !failedBuild && len(buildDefinition.Repositories) > 0 {
 		Log.Notice("########## Cloning repositories")
-		for Index, Repo := range BuildDefinition.Repositories {
-			if Repo.Name == "" {
-				err = Error("Repository at index <%d> is missing a name", Index)
-				FailedBuild = true
+		for index, repo := range buildDefinition.Repositories {
+			if repo.Name == "" {
+				err = Error("Repository at index <%d> is missing a name", index)
+				failedBuild = true
 				break
 			}
 
-			Log.Noticef("########## Cloning repository <%s>", Repo.Name)
+			Log.Noticef("########## Cloning repository <%s>", repo.Name)
 
-			if Repo.Location == "" {
-				err = Error("Repository at index <%d> is missing a location", Repo.Name)
-				FailedBuild = true
+			if repo.Location == "" {
+				err = Error("Repository at index <%d> is missing a location", repo.Name)
+				failedBuild = true
 				break
 			}
 
-			err = CloneRepo(&ctxTimeout, cli, Repo)
+			err = CloneRepo(&ctxTimeout, cli, repo)
 			if err != nil {
-				err = Error("Failed to clone repository <%s>: %s", Repo.Name, err)
-				FailedBuild = true
+				err = Error("Failed to clone repository <%s>: %s", repo.Name, err)
+				failedBuild = true
 			}
 		}
 	}
 
-	Services := make(map[string]string)
-	if !FailedBuild && len(BuildDefinition.Services) > 0 {
+	services := make(map[string]string)
+	if !failedBuild && len(buildDefinition.Services) > 0 {
 		Log.Notice("########## Starting services")
-		for Index, Service := range BuildDefinition.Services {
-			if Service.Name == "" {
-				err = Error("Service at index <%d> is missing a name", Index)
-				FailedBuild = true
+		for index, service := range buildDefinition.Services {
+			if service.Name == "" {
+				err = Error("Service at index <%d> is missing a name", index)
+				failedBuild = true
 				break
 			}
 
-			Log.Noticef("########## Starting service <%s>", Service.Name)
+			Log.Noticef("########## Starting service <%s>", service.Name)
 
-			if Service.Image == "" {
-				err = Error("Service <%s> is missing an image", Service.Name)
-				FailedBuild = true
+			if service.Image == "" {
+				err = Error("Service <%s> is missing an image", service.Name)
+				failedBuild = true
 				break
 			}
 
 			var containerID string
-			containerID, err = StartService(&ctxTimeout, cli, Service, BuildDefinition)
+			containerID, err = StartService(&ctxTimeout, cli, service, buildDefinition)
 			if err != nil {
-				err = Error("Failed to start service <%s>: %s", Service.Name, err)
-				FailedBuild = true
+				err = Error("Failed to start service <%s>: %s", service.Name, err)
+				failedBuild = true
 				break
 			}
 
-			Services[Service.Name] = containerID
+			services[service.Name] = containerID
 		}
 	}
 
-	if !FailedBuild && len(BuildDefinition.Files) > 0 {
+	if !failedBuild && len(buildDefinition.Files) > 0 {
 		Log.Notice("########## Injecting files")
 
-		if !FailedBuild {
-			err = InjectFiles(&ctxTimeout, cli, BuildDefinition.Files, BuildDefinition.Settings.WorkingDirectory, BuildDefinition.Settings.VolumeName)
+		if !failedBuild {
+			err = InjectFiles(&ctxTimeout, cli, buildDefinition.Files, buildDefinition.Settings.WorkingDirectory, buildDefinition.Settings.VolumeName)
 			if err != nil {
 				err = Error("Failed to inject files: %s", err)
-				FailedBuild = true
+				failedBuild = true
 			}
 		}
 	}
 
-	if !FailedBuild && len(BuildDefinition.Steps) > 0 {
+	if !failedBuild && len(buildDefinition.Steps) > 0 {
 		Log.Notice("########## Running build steps")
-		for Index, Step := range BuildDefinition.Steps {
-			if Step.Name == "" {
-				err = Error("Step at index <%d> is missing a name", Index)
-				FailedBuild = true
+		for index, step := range buildDefinition.Steps {
+			if step.Name == "" {
+				err = Error("Step at index <%d> is missing a name", index)
+				failedBuild = true
 				break
 			}
-			if Step.Image == "" {
-				err = Error("Step at index <%d> is missing an image", Index)
-				FailedBuild = true
-				break
-			}
-
-			Log.Noticef("########## running step <%s>", Step.Name)
-
-			if len(Step.Commands) == 0 {
-				err = Error("Step <%s> is missing commands", Step.Name)
-				FailedBuild = true
+			if step.Image == "" {
+				err = Error("Step at index <%d> is missing an image", index)
+				failedBuild = true
 				break
 			}
 
-			err = RunStep(&ctxTimeout, cli, Step, BuildDefinition.Environment)
+			Log.Noticef("########## running step <%s>", step.Name)
+
+			if len(step.Commands) == 0 {
+				err = Error("Step <%s> is missing commands", step.Name)
+				failedBuild = true
+				break
+			}
+
+			err = RunStep(&ctxTimeout, cli, step, buildDefinition.Environment)
 			if err != nil {
-				err = Error("Failed to run build step <%s>: %s", Step.Name, err)
-				FailedBuild = true
+				err = Error("Failed to run build step <%s>: %s", step.Name, err)
+				failedBuild = true
 				break
 			}
 		}
 	}
 
-	if !FailedBuild && len(BuildDefinition.Files) > 0 {
+	if !failedBuild && len(buildDefinition.Files) > 0 {
 		Log.Notice("########## Extracting files")
 
-		err = ExtractFiles(&ctxTimeout, cli, BuildDefinition.Files, BuildDefinition.Settings.WorkingDirectory, BuildDefinition.Settings.VolumeName)
+		err = ExtractFiles(&ctxTimeout, cli, buildDefinition.Files, buildDefinition.Settings.WorkingDirectory, buildDefinition.Settings.VolumeName)
 		if err != nil {
 			err = Error("Failed to extract files: %s", err)
-			FailedBuild = true
+			failedBuild = true
 		}
 	}
 
-	if len(Services) > 0 {
-		for name, containerID := range Services {
+	if len(services) > 0 {
+		for name, id := range services {
 			Log.Noticef("########## Stopping service %s", name)
 
-			err = StopService(&ctxTimeout, cli, name, containerID, BuildDefinition.Services)
+			err = StopService(&ctxTimeout, cli, name, id, buildDefinition.Services)
 			if err != nil {
-				err = Error("Failed to stop service <%s> with container ID <%s>: %s", name, containerID, err)
-				FailedBuild = true
+				err = Error("Failed to stop service <%s> with container ID <%s>: %s", name, id, err)
+				failedBuild = true
 				break
 			}
 
-			delete(Services, name)
+			delete(services, name)
 		}
 	}
 
-	if !BuildDefinition.Settings.RetainNetwork {
+	if !buildDefinition.Settings.RetainNetwork {
 		Log.Debug("########## Removing network")
-		err := RemoveNetwork(&ctx, cli, BuildDefinition.Settings.NetworkName)
+		err := RemoveNetwork(&ctx, cli, buildDefinition.Settings.NetworkName)
 		if err != nil {
 			return Error("Failed to remove network: %s", err)
 		}
 	}
 
-	if !BuildDefinition.Settings.RetainVolume {
+	if !buildDefinition.Settings.RetainVolume {
 		Log.Debug("########## Removing volume")
-		err := RemoveVolume(&ctx, cli, BuildDefinition.Settings.VolumeName)
+		err := RemoveVolume(&ctx, cli, buildDefinition.Settings.VolumeName)
 		if err != nil {
 			return Error("Failed to remove volume: %s", err)
 		}

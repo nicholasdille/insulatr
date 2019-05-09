@@ -9,7 +9,7 @@ import (
 	"os"
 )
 
-func InjectFiles(ctx *context.Context, cli *client.Client, files []File, WorkingDirectory string, VolumeName string) (err error) {
+func InjectFiles(ctx *context.Context, cli *client.Client, files []File, workingDirectory string, volumeName string) (err error) {
 	filesToInject := []File{}
 	for _, file := range files {
 		if len(file.Inject) > 0 {
@@ -25,9 +25,9 @@ func InjectFiles(ctx *context.Context, cli *client.Client, files []File, Working
 		[]string{},
 		"",
 		[]string{},
-		WorkingDirectory,
+		workingDirectory,
 		"",
-		VolumeName,
+		volumeName,
 		[]mount.Mount{},
 		false,
 		os.Stdout,
@@ -43,7 +43,7 @@ func InjectFiles(ctx *context.Context, cli *client.Client, files []File, Working
 	return
 }
 
-func ExtractFiles(ctx *context.Context, cli *client.Client, files []File, WorkingDirectory string, VolumeName string) (err error) {
+func ExtractFiles(ctx *context.Context, cli *client.Client, files []File, workingDirectory string, volumeName string) (err error) {
 	filesToExtract := []File{}
 	for _, file := range files {
 		if len(file.Extract) > 0 {
@@ -60,9 +60,9 @@ func ExtractFiles(ctx *context.Context, cli *client.Client, files []File, Workin
 		[]string{},
 		"",
 		[]string{},
-		WorkingDirectory,
+		workingDirectory,
 		"",
-		VolumeName,
+		volumeName,
 		[]mount.Mount{},
 		false,
 		os.Stdout,

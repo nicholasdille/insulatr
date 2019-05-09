@@ -17,41 +17,41 @@ import (
 )
 
 // ReadContainerLogs parses the container logs provided by the Docker Engine
-func ReadContainerLogs(Reader io.Reader, LogWriter io.Writer) (err error) {
-	Header := make([]byte, 8)
+func ReadContainerLogs(reader io.Reader, logWriter io.Writer) (err error) {
+	header := make([]byte, 8)
 	for {
-		_, err := Reader.Read(Header)
+		_, err := reader.Read(header)
 		if err != nil {
 			if err == io.EOF {
 				return nil
 			}
 			return Error("Failed to reader log header: %s", err)
 		}
-		Count := binary.BigEndian.Uint32(Header[4:])
-		Data := make([]byte, Count)
-		_, err = Reader.Read(Data)
+		count := binary.BigEndian.Uint32(header[4:])
+		data := make([]byte, count)
+		_, err = reader.Read(data)
 		if err != nil {
 			return Error("Failed to read log data: %s", err)
 		}
-		LogWriter.Write(Data)
+		logWriter.Write(data)
 	}
 }
 
 // MapSSHAgentSocket updates environment variables and bind mounts to map the SSH agent socket into a container
-func MapSSHAgentSocket(Environment *[]string, Mounts *[]mount.Mount) (err error) {
-	for _, EnvVar := range os.Environ() {
-		Pair := strings.Split(EnvVar, "=")
-		if Pair[0] == "SSH_AUTH_SOCK" {
-			*Environment = append(
-				*Environment,
-				EnvVar,
+func MapSSHAgentSocket(environment *[]string, mounts *[]mount.Mount) (err error) {
+	for _, envVar := range os.Environ() {
+		pair := strings.Split(envVar, "=")
+		if pair[0] == "SSH_AUTH_SOCK" {
+			*environment = append(
+				*environment,
+				envVar,
 			)
-			*Mounts = append(
-				*Mounts,
+			*mounts = append(
+				*mounts,
 				mount.Mount{
 					Type:   mount.TypeBind,
-					Source: Pair[1],
-					Target: Pair[1],
+					Source: pair[1],
+					Target: pair[1],
 				},
 			)
 			return
@@ -61,7 +61,7 @@ func MapSSHAgentSocket(Environment *[]string, Mounts *[]mount.Mount) (err error)
 }
 
 func RunForegroundContainer(ctx *context.Context, cli *client.Client, image string, shell []string, commands []string, user string, environment []string, dir string, network string, volume string, binds []mount.Mount, overrideEntrypoint bool, logWriter io.Writer, files []File) (err error) {
-	Failed := false
+	failed := false
 
 	// pull image
 	var pullReader io.ReadCloser
@@ -125,57 +125,57 @@ func RunForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 		err = Error("Failed to create container: %s", err)
 		return
 	}
-	ContainerID := resp.ID
+	id := resp.ID
 
 	// Inject files
-	err = CopyFilesToContainer(ctx, cli, ContainerID, files, dir)
+	err = CopyFilesToContainer(ctx, cli, id, files, dir)
 	if err != nil {
 		err = Error("Failed to inject files: %s", err)
-		Failed = true
+		failed = true
 	}
 
 	// Attach
 	var AttachResp types.HijackedResponse
-	if !Failed {
-		AttachResp, err = cli.ContainerAttach(*ctx, ContainerID, types.ContainerAttachOptions{
+	if !failed {
+		AttachResp, err = cli.ContainerAttach(*ctx, id, types.ContainerAttachOptions{
 			Stream: true,
 			Stdin:  true,
 		})
 		if err != nil {
 			err = Error("Failed to attach to container: %s", err)
-			Failed = true
+			failed = true
 		}
 		defer AttachResp.Close()
 	}
 
 	// Start container
-	if !Failed {
-		if err = cli.ContainerStart(*ctx, ContainerID, types.ContainerStartOptions{}); err != nil {
+	if !failed {
+		if err = cli.ContainerStart(*ctx, id, types.ContainerStartOptions{}); err != nil {
 			err = Error("Failed to start container: %s", err)
-			Failed = true
+			failed = true
 		}
 	}
 
 	// Send commands
-	if !Failed {
+	if !failed {
 		_, err = io.Copy(AttachResp.Conn, bytes.NewBufferString(strings.Join(commands, "\n")))
 		AttachResp.CloseWrite()
 		if err != nil {
 			err = Error("Failed to send commands to container: %s", err)
-			Failed = true
+			failed = true
 		}
 	}
 
 	// Retrieve output
-	if !Failed {
-		reader, err := cli.ContainerLogs(*ctx, ContainerID, types.ContainerLogsOptions{
+	if !failed {
+		reader, err := cli.ContainerLogs(*ctx, id, types.ContainerLogsOptions{
 			ShowStdout: true,
 			ShowStderr: true,
 			Follow:     true,
 		})
 		if err != nil {
 			err = Error("Failed to connect to container logs: %s", err)
-			Failed = true
+			failed = true
 
 		} else {
 			go ReadContainerLogs(reader, logWriter)
@@ -184,18 +184,18 @@ func RunForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 
 	// Wait
 	var status container.ContainerWaitOKBody
-	if !Failed {
-		statusCh, errCh := cli.ContainerWait(*ctx, ContainerID, container.WaitConditionNotRunning)
+	if !failed {
+		statusCh, errCh := cli.ContainerWait(*ctx, id, container.WaitConditionNotRunning)
 		select {
 		// Waits for timeout
 		case <-(*ctx).Done():
 			err = Error("Request timed out: %s", (*ctx).Err())
-			Failed = true
+			failed = true
 		// Waits for error
 		case err := <-errCh:
 			if err != nil {
 				err = Error("Failed to wait for container: %s", err)
-				Failed = true
+				failed = true
 			}
 		// Waits for status code
 		case status = <-statusCh:
@@ -205,26 +205,26 @@ func RunForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 	// Check return code
 	if status.StatusCode > 0 {
 		err = Error("Return code not zero (%s)", strconv.FormatInt(status.StatusCode, 10))
-		Failed = true
+		failed = true
 	}
 
 	// Extract files
-	if !Failed {
-		err = CopyFilesFromContainer(ctx, cli, ContainerID, files, dir)
+	if !failed {
+		err = CopyFilesFromContainer(ctx, cli, id, files, dir)
 		if err != nil {
 			err = Error("Failed to extract files: %s", err)
-			Failed = true
+			failed = true
 		}
 	}
 
 	// Remove container
-	err2 := cli.ContainerRemove(*ctx, ContainerID, types.ContainerRemoveOptions{})
+	err2 := cli.ContainerRemove(*ctx, id, types.ContainerRemoveOptions{})
 	if err2 != nil {
 		err2 = Error("Error: Failed to remove container for image <%s>", image)
 
-		if !Failed {
+		if !failed {
 			err = err2
-			Failed = true
+			failed = true
 		}
 	}
 
@@ -286,8 +286,8 @@ func RunBackgroundContainer(ctx *context.Context, cli *client.Client, image stri
 	return
 }
 
-func StopAndRemoveContainer(ctx *context.Context, cli *client.Client, containerID string, logWriter io.Writer) (err error) {
-	err = cli.ContainerStop(*ctx, containerID, nil)
+func StopAndRemoveContainer(ctx *context.Context, cli *client.Client, id string, logWriter io.Writer) (err error) {
+	err = cli.ContainerStop(*ctx, id, nil)
 	if err != nil {
 		err = Error("Failed to stop container: %s", err)
 		return
@@ -295,7 +295,7 @@ func StopAndRemoveContainer(ctx *context.Context, cli *client.Client, containerI
 
 	Failed := false
 	var reader io.ReadCloser
-	reader, err = cli.ContainerLogs(*ctx, containerID, types.ContainerLogsOptions{
+	reader, err = cli.ContainerLogs(*ctx, id, types.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 	})
@@ -311,9 +311,9 @@ func StopAndRemoveContainer(ctx *context.Context, cli *client.Client, containerI
 		}
 	}
 
-	err2 := cli.ContainerRemove(*ctx, containerID, types.ContainerRemoveOptions{})
+	err2 := cli.ContainerRemove(*ctx, id, types.ContainerRemoveOptions{})
 	if err2 != nil {
-		err2 = Error("Error: Failed to remove container <%s>", containerID)
+		err2 = Error("Error: Failed to remove container <%s>", id)
 
 		if !Failed {
 			err = err2

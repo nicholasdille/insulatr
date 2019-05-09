@@ -22,24 +22,24 @@ type argT struct {
 	ConsoleLogLevel string `cli:"l,console-log-level" usage:"Controls the log level on the console"`
 }
 
-// GitCommit will be filled from build flags
-var GitCommit string
+// gitCommit will be filled from build flags
+var gitCommit string
 
-// BuildTime will be filled from build flags
-var BuildTime string
+// buildTime will be filled from build flags
+var buildTime string
 
-// Version will be filled from build flags
-var Version string
+// version will be filled from build flags
+var version string
 
 func main() {
-	if len(GitCommit) == 0 {
-		GitCommit = "UNKNOWN"
+	if len(gitCommit) == 0 {
+		gitCommit = "UNKNOWN"
 	}
-	if len(BuildTime) == 0 {
-		BuildTime = "UNKNOWN"
+	if len(buildTime) == 0 {
+		buildTime = "UNKNOWN"
 	}
-	if len(Version) == 0 {
-		Version = "UNKNOWN"
+	if len(version) == 0 {
+		version = "UNKNOWN"
 	}
 
 	os.Exit(cli.Run(new(argT), func(ctx *cli.Context) error {
@@ -56,8 +56,8 @@ func main() {
 			os.Exit(1)
 		}
 
-		BuildDefinition := GetBuildDefinitionDefaults()
-		err = yaml.Unmarshal(Source, &BuildDefinition)
+		buildDefinition := GetBuildDefinitionDefaults()
+		err = yaml.Unmarshal(Source, &buildDefinition)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error parsing YAML: %s\n", err)
 			os.Exit(1)
@@ -72,31 +72,31 @@ func main() {
 			argv.RetainNetwork = true
 		}
 		if argv.ReuseVolume {
-			BuildDefinition.Settings.ReuseVolume = argv.ReuseVolume
+			buildDefinition.Settings.ReuseVolume = argv.ReuseVolume
 		}
 		if argv.RetainVolume {
-			BuildDefinition.Settings.RetainVolume = argv.RetainVolume
+			buildDefinition.Settings.RetainVolume = argv.RetainVolume
 		}
 		if argv.ReuseNetwork {
-			BuildDefinition.Settings.ReuseNetwork = argv.ReuseNetwork
+			buildDefinition.Settings.ReuseNetwork = argv.ReuseNetwork
 		}
 		if argv.RetainNetwork {
-			BuildDefinition.Settings.RetainNetwork = argv.RetainNetwork
+			buildDefinition.Settings.RetainNetwork = argv.RetainNetwork
 		}
 
-		BuildDefinition.Settings.AllowPrivileged = argv.AllowPrivileged
-		BuildDefinition.Settings.AllowDockerSock = argv.AllowDockerSock
+		buildDefinition.Settings.AllowPrivileged = argv.AllowPrivileged
+		buildDefinition.Settings.AllowDockerSock = argv.AllowDockerSock
 
 		switch argv.ConsoleLogLevel {
 		case "DEBUG", "NOTICE", "INFO":
-			BuildDefinition.Settings.ConsoleLogLevel = argv.ConsoleLogLevel
+			buildDefinition.Settings.ConsoleLogLevel = argv.ConsoleLogLevel
 		case "":
 		default:
 			fmt.Fprintf(os.Stderr, "Console log level must be DEBUG, NOTICE or INFO (got: %s)\n", argv.ConsoleLogLevel)
 			os.Exit(1)
 		}
 
-		err = Run(BuildDefinition)
+		err = Run(buildDefinition)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error building %s: %s\n", argv.File, err)
 			os.Exit(1)
