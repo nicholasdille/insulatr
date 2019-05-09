@@ -7,6 +7,7 @@ import (
 	"github.com/docker/docker/client"
 )
 
+// RemoveVolume deletes a volume
 func RemoveVolume(ctx *context.Context, cli *client.Client, name string) (err error) {
 	var result dockervolume.VolumeListOKBody
 	result, err = cli.VolumeList(*ctx, filters.NewArgs())
@@ -24,6 +25,7 @@ func RemoveVolume(ctx *context.Context, cli *client.Client, name string) (err er
 	return
 }
 
+// CreateVolume creates a new volume
 func CreateVolume(ctx *context.Context, cli *client.Client, name string, driverName string) (err error) {
 	_, err = cli.VolumeCreate(*ctx, dockervolume.VolumeCreateBody{
 		Name:   name,

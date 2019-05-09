@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// RunStep executes a single step in a container
 func RunStep(ctx *context.Context, cli *client.Client, step Step, globalEnvironment []string) (err error) {
 	environment := step.Environment
 	for _, globalEnvVar := range globalEnvironment {

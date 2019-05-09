@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// StartService starts a single service in a container
 func StartService(ctx *context.Context, cli *client.Client, service Service, build *Build) (id string, err error) {
 	for index, envVarDef := range service.Environment {
 		if !strings.Contains(envVarDef, "=") {
@@ -43,6 +44,7 @@ func StartService(ctx *context.Context, cli *client.Client, service Service, bui
 	return
 }
 
+// StopService stops a single service
 func StopService(ctx *context.Context, cli *client.Client, name string, id string, services []Service) (err error) {
 	var logWriter io.Writer
 	logWriter = os.Stdout

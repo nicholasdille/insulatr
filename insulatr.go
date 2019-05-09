@@ -86,6 +86,7 @@ type Build struct {
 	Steps        []Step       `yaml:"steps"`
 }
 
+// GetBuildDefinitionDefaults presets defaults values for a build definition
 func GetBuildDefinitionDefaults() *Build {
 	return &Build{
 		Settings: Settings{
@@ -115,6 +116,7 @@ var consoleFormat = logging.MustStringFormatter(
 	`%{color}%{time:15:04:05} %{message}%{color:reset}`,
 )
 
+// PrepareLogging create the logging system with file and console backends
 func PrepareLogging(consoleLogLevelString string, fileWriter io.Writer) {
 	var consoleLogLevel logging.Level
 	switch consoleLogLevelString {
@@ -146,6 +148,7 @@ func Error(format string, a ...interface{}) (err error) {
 	return errors.New(message)
 }
 
+// Run executes the build definition
 func Run(buildDefinition *Build) (err error) {
 	if _, err := os.Stat(buildDefinition.Settings.LogDirectory); os.IsNotExist(err) {
 		os.Mkdir(buildDefinition.Settings.LogDirectory, 0755)

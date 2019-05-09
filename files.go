@@ -9,6 +9,7 @@ import (
 	"os"
 )
 
+// InjectFiles injects a list of files into the volume
 func InjectFiles(ctx *context.Context, cli *client.Client, files []File, workingDirectory string, volumeName string) (err error) {
 	filesToInject := []File{}
 	for _, file := range files {
@@ -43,6 +44,7 @@ func InjectFiles(ctx *context.Context, cli *client.Client, files []File, working
 	return
 }
 
+// ExtractFiles extracts a list of files from the volume
 func ExtractFiles(ctx *context.Context, cli *client.Client, files []File, workingDirectory string, volumeName string) (err error) {
 	filesToExtract := []File{}
 	for _, file := range files {

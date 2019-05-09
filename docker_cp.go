@@ -17,6 +17,7 @@ import (
 	"time"
 )
 
+// InjectFile copies the contents of a single file into the volume
 func InjectFile(ctx *context.Context, cli *client.Client, id string, srcPath string, dstPath string) (err error) {
 	pos := strings.LastIndex(srcPath, "/")
 	if pos > -1 {
@@ -86,6 +87,7 @@ func InjectFile(ctx *context.Context, cli *client.Client, id string, srcPath str
 	return
 }
 
+// CreateFile creates a new file with the given content in the volume
 func CreateFile(ctx *context.Context, cli *client.Client, id string, name string, data string, dir string) (err error) {
 	var content io.ReadCloser
 	var dataBytes []byte
@@ -120,6 +122,7 @@ func CreateFile(ctx *context.Context, cli *client.Client, id string, name string
 	return
 }
 
+// CopyFilesToContainer enumerates all files to copy into the volume
 func CopyFilesToContainer(ctx *context.Context, cli *client.Client, id string, files []File, destination string) (err error) {
 	for _, file := range files {
 		if len(file.Inject) > 0 {
@@ -158,6 +161,7 @@ func CopyFilesToContainer(ctx *context.Context, cli *client.Client, id string, f
 	return
 }
 
+// CopyFilesFromContainer enumerates all files to be copied from the volume
 func CopyFilesFromContainer(ctx *context.Context, cli *client.Client, id string, files []File, dir string) (err error) {
 	for _, file := range files {
 		if len(file.Extract) > 0 {

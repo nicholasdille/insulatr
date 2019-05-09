@@ -7,6 +7,7 @@ import (
 	"os"
 )
 
+// CloneRepo clones a list of repositories into the volume
 func CloneRepo(ctx *context.Context, cli *client.Client, repo Repository) (err error) {
 	var ref string
 	if len(repo.Branch) > 0 {

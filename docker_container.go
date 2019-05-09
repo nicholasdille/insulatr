@@ -60,6 +60,7 @@ func MapSSHAgentSocket(environment *[]string, mounts *[]mount.Mount) (err error)
 	return Error("Unable to environment variable SSH_AUTH_SOCK: %s", "")
 }
 
+// RunForegroundContainer runs a container and waits for it to terminate while streaming the logs before removing the container
 func RunForegroundContainer(ctx *context.Context, cli *client.Client, image string, shell []string, commands []string, user string, environment []string, dir string, network string, volume string, binds []mount.Mount, overrideEntrypoint bool, logWriter io.Writer, files []File) (err error) {
 	failed := false
 
@@ -231,6 +232,7 @@ func RunForegroundContainer(ctx *context.Context, cli *client.Client, image stri
 	return
 }
 
+// RunBackgroundContainer runs a container in the background
 func RunBackgroundContainer(ctx *context.Context, cli *client.Client, image string, environment []string, network string, name string, privileged bool) (id string, err error) {
 	// pull image
 	var pullReader io.ReadCloser
@@ -286,6 +288,7 @@ func RunBackgroundContainer(ctx *context.Context, cli *client.Client, image stri
 	return
 }
 
+// StopAndRemoveContainer stops a container, reads the logs and removes it
 func StopAndRemoveContainer(ctx *context.Context, cli *client.Client, id string, logWriter io.Writer) (err error) {
 	err = cli.ContainerStop(*ctx, id, nil)
 	if err != nil {
