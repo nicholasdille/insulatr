@@ -1,5 +1,6 @@
 settings:
   shell: [ "sh", "-x", "-e" ]
+  console_log_level: DEBUG
 
 environment:
   - XDG_SESSION_ID
