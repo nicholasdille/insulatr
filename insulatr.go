@@ -162,8 +162,11 @@ func run(build *Build) (err error) {
 		return Error("Unable to expand global environment: %s", err)
 	}
 	for index, repo := range build.Repositories {
-		if len(build.Repositories) > 1 && len(repo.Directory) == 0 || repo.Directory == "." {
-			return Error("All repositories require the directory node to be set (<.> is not allowed)")
+		log.Debugf("len(build.Repositories)=%d.", len(build.Repositories))
+		if len(build.Repositories) > 1 {
+			if len(repo.Directory) == 0 || repo.Directory == "." {
+				return Error("All repositories require the directory node to be set (<.> is not allowed)")
+			}
 		}
 
 		build.Repositories[index].WorkingDirectory = build.Settings.WorkingDirectory
