@@ -4,9 +4,22 @@
 
 Based on a YAML file, `insulatr` isolates build steps in individual containers while results are transported using a Docker volume.
 
+## Why `insulatr`
+
+Container native builds facilitate container to execute the individual steps in a build definition. The provides the following advantages:
+
+1. **Runtime environment**: When executing tasks in a container the requirements on the host are reduced to the container runtime. By choosing the container image, the build steps is executed in the appropriate runtime environment.
+
+1. **Isolation**: The tasks executed as part of the build are isolated from each other as well as from the host. It is even possible to use conflicting toolsets for individual steps.
+
+1. **Reproducibility**: Each build step is isolated in a predefined runtime environment and will produce the same behaviour when repeated.
+
+1. **Pipeline as Code**: XXX.
+
+`insulatr` is deliberately designed as a standalone tool to execute a build definition in containerized steps. Although multiple CI/CD tools and products exist which combine a scheduler with an execution engine, they are tightly coupled. By having a separate tool like `insulatr`, builds can be reproduced in any compatible execution environment - during development as well as in stages of a deployment.
+
 ## Table of contents
 
-1. [Why `insulatr`](#why-insulatr)
 1. [Usage](#usage)
     1. [Local](#local)
     1. [Docker image](#docker-image)
@@ -21,14 +34,6 @@ Based on a YAML file, `insulatr` isolates build steps in individual containers w
 1. [Building](#building)
 1. [Design](#design)
 1. [Useful links](#useful-links)
-
-## Why `insulatr`
-
-XXX container native
-
-XXX advantages: only docker as prerequisite, isolation, control/responsibility, reproducibility
-
-XXX integration
 
 ## Usage
 
