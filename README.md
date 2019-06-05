@@ -14,7 +14,7 @@ Container native builds facilitate container to execute the individual steps in 
 
 1. **Reproducibility**: Each build step is isolated in a predefined runtime environment and will produce the same behaviour when repeated.
 
-1. **Pipeline as Code**: XXX.
+1. **Pipeline as Code**: The build process is specified in a textual form and can be stored in the same repository as the code. Contrary to a build script, it specifies a single execution path.
 
 `insulatr` is deliberately designed as a standalone tool to execute a build definition in containerized steps. Although multiple CI/CD tools and products exist which combine a scheduler with an execution engine, they are tightly coupled. By having a separate tool like `insulatr`, builds can be reproduced in any compatible execution environment - during development as well as in stages of a deployment.
 
@@ -66,7 +66,8 @@ The Docker image [`nicholasdille/insulatr`](https://cloud.docker.com/repository/
 
 The following tags are currently supported:
 
-- [`latest` (Dockerfile#master)](https://github.com/nicholasdille/insulatr/blob/master/Dockerfile)
+- [`master` (Dockerfile#master)](https://github.com/nicholasdille/insulatr/blob/master/Dockerfile)
+- [`1.0.1`, `1.0`, `1`, `latest` (Dockerfile#1.0.1)](https://github.com/nicholasdille/insulatr/blob/1.0.1/Dockerfile)
 
 New releases receive a git tag which triggers a separate build which produces a new image tagged with the versions.
 
