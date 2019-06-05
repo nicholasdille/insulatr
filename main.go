@@ -32,7 +32,6 @@ var BuildTime string
 var Version string
 
 func main() {
-	fmt.Printf("GitCommit=%s,BuildTime=%s,Version=%s\n", GitCommit, BuildTime, Version)
 	if len(GitCommit) == 0 {
 		GitCommit = "UNKNOWN"
 	}
