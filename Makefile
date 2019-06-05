@@ -117,17 +117,23 @@ changelog-%: ; $(info $(M) Creating changelog for milestone $* on $(GIT_TAG))
 	    hub issue -M $* -s closed -f "[%t](%U)%n" | while read LINE; do echo "- $$LINE"; done; \
 	) > $(GIT_TAG).txt
 
-release-%: static changelog-% ; $(info $(M) Releasing milestone $* as $(GIT_TAG))
+extract-%: ; $(info $(M) Extracting static binary from $(IMAGE):$*...)
+	@docker create --name $(PACKAGE)-$* $(IMAGE):$*
+	@docker cp $(PACKAGE)-$*:/insulatr bin/$(STATIC)
+	@docker rm $(PACKAGE)-$*
+
+release-%: changelog-% ; $(info $(M) Releasing milestone $* as $(GIT_TAG))
 	@hub release create -F $(GIT_TAG).txt -a bin/$(STATIC) -a bin/$(STATIC).sha256 -a bin/$(STATIC).asc $(GIT_TAG)
 
-push-%: $(IMAGE)-% ; $(info $(M) Pushing semver tags for image $(IMAGE):$*...)
+push-%: $(SEMVER) ; $(info $(M) Pushing semver tags for image $(IMAGE):$*...)
 	@MAJOR=$$($(SEMVER) get major $*) && \
 	MINOR=$$($(SEMVER) get minor $*) && \
 	docker tag $(IMAGE):$* $(IMAGE):$$MAJOR.$$MINOR && \
 	docker tag $(IMAGE):$* $(IMAGE):$$MAJOR && \
+	docker push $(IMAGE):$* && \
 	docker push $(IMAGE):$$MAJOR.$$MINOR && \
-	docker push $(IMAGE):$$MAJOR && \
+	docker push $(IMAGE):$$MAJOR
 
-latest-%: $(IMAGE)-% ; $(info $(M) Pushing latest tag for image $(IMAGE):$*...)
-	@docker tag $(IMAGE):$* $(IMAGE):latest \
+latest-%: ; $(info $(M) Pushing latest tag for image $(IMAGE):$*...)
+	@docker tag $(IMAGE):$* $(IMAGE):latest && \
 	docker push $(IMAGE):latest
