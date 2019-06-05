@@ -33,14 +33,18 @@ func CloneRepo(ctx *context.Context, cli *client.Client, repo Repository) (err e
 		commands = append(commands, repo.Directory)
 	}
 
-	environment := []string{
-		"GIT_SSH_COMMAND=ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no",
-	}
+	environment := []string{}
 	bindMounts := []mount.Mount{}
-	err = MapSSHAgentSocket(&environment, &bindMounts)
-	if err != nil {
-		err = Error("Unable to map SSH agent socket for repo <%s>", repo.Name)
-		return
+	if len(os.Getenv("SSH_AUTH_SOCK")) > 0 {
+		environment = append(environment, "GIT_SSH_COMMAND=ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no")
+		err = MapSSHAgentSocket(&environment, &bindMounts)
+		if err != nil {
+			err = Error("Unable to map SSH agent socket for repo <%s>", repo.Name)
+			return
+		}
+
+	} else {
+		log.Warningf("Cannot map SSH agent socket for repo <%s> because SSH_AUTH_SOCK is not set. Skipping.", repo.Name)
 	}
 
 	err = RunForegroundContainer(
