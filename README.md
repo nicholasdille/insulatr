@@ -74,7 +74,7 @@ New releases receive a git tag which triggers a separate build which produces a 
 The Docker image is used in the following way:
 
 ```bash
-docker run -it --volume $PWD:/insulatr --workdir /insulatr nicholasdille/insulatr [<parameters>]
+docker run -it --rm --volume $(pwd)/insulatr.yaml:/insulatr.yaml --volume /var/run/docker.sock:/var/run/docker.sock nicholasdille/insulatr [<parameters>]
 ```
 
 ### Alias
