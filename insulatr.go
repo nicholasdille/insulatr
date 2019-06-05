@@ -159,7 +159,7 @@ func Run(buildDefinition *Build) (err error) {
 		return Error("Failed to open file: ", err)
 	}
 	PrepareLogging(buildDefinition.Settings.ConsoleLogLevel, fileWriter)
-	log.Noticef("Running insulatr version %s built at %s from %s\n", version, buildTime, gitCommit)
+	log.Noticef("Running insulatr version %s built at %s from %s\n", Version, BuildTime, GitCommit)
 
 	err = ExpandEnvironment(&buildDefinition.Environment, os.Environ())
 	if err != nil {

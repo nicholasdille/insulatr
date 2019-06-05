@@ -23,23 +23,24 @@ type argT struct {
 }
 
 // gitCommit will be filled from build flags
-var gitCommit string
+var GitCommit string
 
 // buildTime will be filled from build flags
-var buildTime string
+var BuildTime string
 
 // version will be filled from build flags
-var version string
+var Version string
 
 func main() {
-	if len(gitCommit) == 0 {
-		gitCommit = "UNKNOWN"
+	fmt.Printf("GitCommit=%s,BuildTime=%s,Version=%s\n", GitCommit, BuildTime, Version)
+	if len(GitCommit) == 0 {
+		GitCommit = "UNKNOWN"
 	}
-	if len(buildTime) == 0 {
-		buildTime = "UNKNOWN"
+	if len(BuildTime) == 0 {
+		BuildTime = "UNKNOWN"
 	}
-	if len(version) == 0 {
-		version = "UNKNOWN"
+	if len(Version) == 0 {
+		Version = "UNKNOWN"
 	}
 
 	os.Exit(cli.Run(new(argT), func(ctx *cli.Context) error {
