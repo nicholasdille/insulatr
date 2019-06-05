@@ -62,20 +62,20 @@ deptree: $(DEPTH) ; $(info $(M) Creating dependency tree...)
 
 check: format lint
 
-%.sha256: $* ; $(info $(M) Creating SHA256 for $*...)
+%.sha256: % ; $(info $(M) Creating SHA256 for $*...)
 	@echo sha256sum $* > $@
 
-%.asc: $* ; $(info $(M) Creating signature for $*...)
-	@gpg --local-user $$(git config --get user.signingKey) --sign --armor --detach-sig $*
+%.asc: % ; $(info $(M) Creating signature for $*...)
+	@gpg --local-user $$(git config --get user.signingKey) --sign --armor --detach-sig --yes $*
 
 binary: $(PACKAGE)
 
-$(PACKAGE): bin/$(PACKAGE)
+$(PACKAGE): bin/$(PACKAGE) bin/$(PACKAGE).sha256 bin/$(PACKAGE).asc
 
 bin/$(PACKAGE): $(BASE) $(SOURCE) ; $(info $(M) Building $(PACKAGE)...)
 	@cd $(BASE) && $(GO) build -ldflags "-s -w -X main.GitCommit=$(GIT_COMMIT) -X main.BuildTime=$(BUILD_TIME) -X main.Version=$(GIT_TAG)" -o $@ $(SOURCE)
 
-static: bin/$(STATIC)
+static: bin/$(STATIC) bin/$(STATIC).sha256 bin/$(STATIC).asc
 
 bin/$(STATIC): $(BASE) $(SOURCE) ; $(info $(M) Building static $(PACKAGE)...)
 	@cd $(BASE) && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -a -tags netgo -ldflags "-s -w -X main.GitCommit=$(GIT_COMMIT) -X main.BuildTime=$(BUILD_TIME) -X main.Version=$(GIT_TAG)" -o $@ $(SOURCE)
@@ -83,10 +83,10 @@ bin/$(STATIC): $(BASE) $(SOURCE) ; $(info $(M) Building static $(PACKAGE)...)
 check-docker:
 	@docker version >/dev/null
 
-docker: $(IMAGE)
+docker: $(IMAGE)-master
 
-$(IMAGE): check-docker ; $(info $(M) Building container image $*...)
-	@docker build --tag $(IMAGE) .
+$(IMAGE)-%: check-docker ; $(info $(M) Building container image $(IMAGE):$*...)
+	@docker build --build-arg REF=$* --tag $(IMAGE):$* .
 
 test: docker ; $(info $(M) Building container image for testing...)
 	@docker build --file Dockerfile.tests --tag $(IMAGE):tests .
@@ -120,12 +120,14 @@ changelog-%: ; $(info $(M) Creating changelog for milestone $* on $(GIT_TAG))
 release-%: static changelog-% ; $(info $(M) Releasing milestone $* as $(GIT_TAG))
 	@hub release create -F $(GIT_TAG).txt -a bin/$(STATIC) -a bin/$(STATIC).sha256 -a bin/$(STATIC).asc $(GIT_TAG)
 
-docker-tag-%: ; $(info $(M) Pushing semver tags for image $(IMAGE):$*...)
+push-%: $(IMAGE)-% ; $(info $(M) Pushing semver tags for image $(IMAGE):$*...)
 	@MAJOR=$$($(SEMVER) get major $*) && \
 	MINOR=$$($(SEMVER) get minor $*) && \
-	docker pull $(IMAGE):$* && \
 	docker tag $(IMAGE):$* $(IMAGE):$$MAJOR.$$MINOR && \
 	docker tag $(IMAGE):$* $(IMAGE):$$MAJOR && \
 	docker push $(IMAGE):$$MAJOR.$$MINOR && \
 	docker push $(IMAGE):$$MAJOR && \
+
+latest-%: $(IMAGE)-% ; $(info $(M) Pushing latest tag for image $(IMAGE):$*...)
+	@docker tag $(IMAGE):$* $(IMAGE):latest \
 	docker push $(IMAGE):latest
