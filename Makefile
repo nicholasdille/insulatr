@@ -24,7 +24,6 @@ M = $(shell printf "\033[34;1m▶\033[0m")
 .PHONY: clean deps format linter check static check-docker docker test run
 
 clean: ; $(info $(M) Cleaning...)
-	@rm -rf $(GOPATH)
 	@rm bin/*
 
 $(BASE): ; $(info $(M) Creating link...)
@@ -63,17 +62,20 @@ deptree: $(DEPTH) ; $(info $(M) Creating dependency tree...)
 
 check: format lint
 
-%.sha256: ; $(info $(M) Creating SHA256 for $*...)
+%.sha256: $* ; $(info $(M) Creating SHA256 for $*...)
 	@echo sha256sum $* > $@
+
+%.asc: $* ; $(info $(M) Creating signature for $*...)
+	@gpg --local-user $$(git config --get user.signingKey) --sign --armor --detach-sig $*
 
 binary: $(PACKAGE)
 
-$(PACKAGE): bin/$(PACKAGE) bin/$(PACKAGE).sha256
+$(PACKAGE): bin/$(PACKAGE)
 
 bin/$(PACKAGE): $(BASE) $(SOURCE) ; $(info $(M) Building $(PACKAGE)...)
 	@cd $(BASE) && $(GO) build -ldflags "-s -w -X main.GitCommit=$(GIT_COMMIT) -X main.BuildTime=$(BUILD_TIME) -X main.Version=$(GIT_TAG)" -o $@ $(SOURCE)
 
-static: bin/$(STATIC) bin/$(STATIC).sha256
+static: bin/$(STATIC)
 
 bin/$(STATIC): $(BASE) $(SOURCE) ; $(info $(M) Building static $(PACKAGE)...)
 	@cd $(BASE) && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -a -tags netgo -ldflags "-s -w -X main.GitCommit=$(GIT_COMMIT) -X main.BuildTime=$(BUILD_TIME) -X main.Version=$(GIT_TAG)" -o $@ $(SOURCE)
@@ -105,7 +107,8 @@ ssh-%: scp-% ; $(info $(M) Running remotely on $*)
 	@ssh $* ./bin/$(PACKAGE) --file $(BUILDDEF) $(PARAMS)
 
 tag-%: ; $(info $(M) Tagging as $*)
-	@hub tag $*
+	@hub tag --annotate --sign $* --message "Version $*"
+	@hub push origin $*
 
 changelog-%: ; $(info $(M) Creating changelog for milestone $* on $(GIT_TAG))
 	@( \
@@ -115,8 +118,7 @@ changelog-%: ; $(info $(M) Creating changelog for milestone $* on $(GIT_TAG))
 	) > $(GIT_TAG).txt
 
 release-%: static changelog-% ; $(info $(M) Releasing milestone $* as $(GIT_TAG))
-	@hub push --tags
-	@hub release create -F $(GIT_TAG).txt -a bin/$(STATIC) -a bin/$(STATIC).sha256 $(GIT_TAG)
+	@hub release create -F $(GIT_TAG).txt -a bin/$(STATIC) -a bin/$(STATIC).sha256 -a bin/$(STATIC).asc $(GIT_TAG)
 
 docker-tag-%: ; $(info $(M) Pushing semver tags for image $(IMAGE):$*...)
 	@MAJOR=$$($(SEMVER) get major $*) && \
