@@ -1,0 +1,20 @@
+files:
+  - inject: HelloWorld.java
+    content: |-
+      class HelloWorld {
+        public static void main(String[] a) {
+          System.out.println("Hello world!");
+        }
+      }
+
+steps:
+
+  - name: build
+    image: openjdk:8-jdk
+    commands:
+      - javac HelloWorld.java
+      
+  - name: run
+    image: openjdk:8-jre
+    commands:
+      - java HelloWorld
