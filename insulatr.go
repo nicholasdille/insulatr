@@ -198,11 +198,9 @@ func Run(buildDefinition *Build) (err error) {
 		}
 
 		if len(step.Shell) == 0 {
-			log.Warningf("Parameter <shell> of step <%s> is overwritten by global setting", step.Name)
 			buildDefinition.Steps[index].Shell = buildDefinition.Settings.Shell
 		}
 		if len(step.WorkingDirectory) == 0 {
-			log.Warningf("Parameter <working_directory> of step <%s> is overwritten by global setting", step.Name)
 			buildDefinition.Steps[index].WorkingDirectory = buildDefinition.Settings.WorkingDirectory
 		}
 		buildDefinition.Steps[index].VolumeName = buildDefinition.Settings.VolumeName
