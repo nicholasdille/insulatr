@@ -105,4 +105,5 @@ changelog-%: ; $(info $(M) Creating changelog for milestone $* on $(GIT_TAG))
 	) > $(GIT_TAG).txt
 
 release-%: static changelog-% ; $(info $(M) Releasing milestone $* as $(GIT_TAG))
+	@hub push --tags
 	@hub release create -F $(GIT_TAG).txt -a bin/$(STATIC) -a bin/$(STATIC).sha256 $(GIT_TAG)
