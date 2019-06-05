@@ -1,4 +1,5 @@
 PACKAGE  = insulatr
+IMAGE    = nicholasdille/$(PACKAGE)
 STATIC   = insulatr-$(shell uname -m)
 SOURCE   = $(shell echo *.go)
 GOPATH   = $(CURDIR)/.gopath
@@ -9,6 +10,7 @@ GOLINT   = $(BIN)/golint
 DEPTH    = $(BIN)/depth
 GOFMT    = gofmt
 GLIDE    = glide
+SEMVER   = $(BIN)/semver
 BUILDDEF = insulatr.yaml
 
 GIT_COMMIT = $(shell git rev-list -1 HEAD)
@@ -37,6 +39,12 @@ $(GLIDE): ; $(info $(M) Installing glide...)
 
 $(DEPTH): $(BASE) ; $(info $(M) Installing depth...)
 	@$(GO) get github.com/KyleBanks/depth/cmd/depth
+
+$(SEMVER): $(BASE); $(info $(M) Installing semver...)
+	@curl -sLf https://github.com/fsaintjacques/semver-tool/raw/2.1.0/src/semver > $@
+	@chmod +x $@
+
+semver: $(SEMVER)
 
 depupdate: $(BASE) $(GLIDE) ; $(info $(M) Updating dependencies...)
 	@$(GLIDE) update
@@ -73,20 +81,22 @@ bin/$(STATIC): $(BASE) $(SOURCE) ; $(info $(M) Building static $(PACKAGE)...)
 check-docker:
 	@docker version >/dev/null
 
-docker: check-docker ; $(info $(M) Building container image...)
-	@docker build --tag $(PACKAGE) .
+docker: $(IMAGE)
+
+$(IMAGE): check-docker ; $(info $(M) Building container image $*...)
+	@docker build --tag $(IMAGE) .
 
 test: docker ; $(info $(M) Building container image for testing...)
-	@docker build --file Dockerfile.tests --tag $(PACKAGE):tests .
+	@docker build --file Dockerfile.tests --tag $(IMAGE):tests .
 	@for FILE in $$(cd tests && ls *.yaml); do \
 		echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"; \
 		echo "Running test with $${FILE}"; \
-		docker run -it --rm --volume /var/run/docker.sock:/var/run/docker.sock $(PACKAGE):tests --remove-volume --remove-network --file /tmp/$${FILE}; \
+		docker run -it --rm --volume /var/run/docker.sock:/var/run/docker.sock $(IMAGE):tests --remove-volume --remove-network --file /tmp/$${FILE}; \
 	done; \
 	exit 0
 
 run: docker ; $(info $(M) Running $(PACKAGE)...)
-	@docker run -it --rm --volume /var/run/docker.sock:/var/run/docker.sock $(PACKAGE) --remove-volume --remove-network
+	@docker run -it --rm --volume /var/run/docker.sock:/var/run/docker.sock $(IMAGE) --remove-volume --remove-network
 
 scp-%: binary ; $(info $(M) Copying to $*)
 	@tar -cz bin/$(PACKAGE) $(BUILDDEF) | ssh $* tar -xvz
@@ -107,3 +117,13 @@ changelog-%: ; $(info $(M) Creating changelog for milestone $* on $(GIT_TAG))
 release-%: static changelog-% ; $(info $(M) Releasing milestone $* as $(GIT_TAG))
 	@hub push --tags
 	@hub release create -F $(GIT_TAG).txt -a bin/$(STATIC) -a bin/$(STATIC).sha256 $(GIT_TAG)
+
+docker-tag-%: ; $(info $(M) Pushing semver tags for image $(IMAGE):$*...)
+	@MAJOR=$$($(SEMVER) get major $*) && \
+	MINOR=$$($(SEMVER) get minor $*) && \
+	docker pull $(IMAGE):$* && \
+	docker tag $(IMAGE):$* $(IMAGE):$$MAJOR.$$MINOR && \
+	docker tag $(IMAGE):$* $(IMAGE):$$MAJOR && \
+	docker push $(IMAGE):$$MAJOR.$$MINOR && \
+	docker push $(IMAGE):$$MAJOR && \
+	docker push $(IMAGE):latest
