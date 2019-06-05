@@ -67,7 +67,7 @@ The Docker image [`nicholasdille/insulatr`](https://cloud.docker.com/repository/
 The following tags are currently supported:
 
 - [`master` (Dockerfile#master)](https://github.com/nicholasdille/insulatr/blob/master/Dockerfile)
-- [`1.0.1`, `1.0`, `1`, `latest` (Dockerfile#1.0.1)](https://github.com/nicholasdille/insulatr/blob/1.0.1/Dockerfile)
+- [`1.0.2`, `1.0`, `1`, `latest` (Dockerfile#1.0.2)](https://github.com/nicholasdille/insulatr/blob/1.0.2/Dockerfile)
 
 New releases receive a git tag which triggers a separate build which produces a new image tagged with the versions.
 
