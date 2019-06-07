@@ -113,8 +113,10 @@ clean-docker: ; $(info $(M) Removing Docker images called $(IMAGE)...)
 
 docker: $(IMAGE)-master
 
-$(IMAGE)-%: check-docker ; $(info $(M) Building container image $(IMAGE):$*...)
-	@docker image ls $(IMAGE) | grep -q $* || docker build --build-arg REF=$* --tag $(IMAGE):$* .
+$(IMAGE)-%: check-docker static ; $(info $(M) Building container image $(IMAGE):$*...)
+	@docker image ls $(IMAGE) | grep -q $* || docker build --tag $(IMAGE):$* .
+	@docker tag $(IMAGE):$* $(IMAGE):$(MAJOR_VERSION).$(MINOR_VERSION)
+	@docker tag $(IMAGE):$* $(IMAGE):$(MAJOR_VERSION)
 
 ##################################################
 # RELEASE
@@ -149,18 +151,13 @@ changelog-%: ; $(info $(M) Creating changelog for $(GIT_TAG) using milestone $*.
 	    hub issue -M $* -s closed -f "[%t](%U)%n" | while read LINE; do echo "- $$LINE"; done; \
 	) > $(GIT_TAG).txt
 
-build-%: static $(IMAGE)-%
-	@echo Done.
-
-release-%: check-changes check-tag tag-% build-% push-%; $(info $(M) Uploading release for $(GIT_TAG)...)
+release-%: check-changes check-tag tag-% $(IMAGE)-% push-%; $(info $(M) Uploading release for $(GIT_TAG)...)
 	@hub release create -F $(GIT_TAG).txt -a bin/$(STATIC) -a bin/$(STATIC).sha256 -a bin/$(STATIC).asc $(GIT_TAG)
 
 release: check-changes check-tag changelog release-$(GIT_TAG) ; $(info $(M) Releasing version $(GIT_TAG)...)
 	@echo Done.
 
 push-%: ; $(info $(M) Pushing semver tags for image $(IMAGE):$*...)
-	@docker tag $(IMAGE):$* $(IMAGE):$(MAJOR_VERSION).$(MINOR_VERSION)
-	@docker tag $(IMAGE):$* $(IMAGE):$(MAJOR_VERSION)
 	@docker push $(IMAGE):$*
 	@docker push $(IMAGE):$(MAJOR_VERSION).$(MINOR_VERSION)
 	@docker push $(IMAGE):$(MAJOR_VERSION)
