@@ -117,12 +117,15 @@ $(IMAGE)-%: check-docker ; $(info $(M) Building container image $(IMAGE):$*...)
 # RELEASE
 ##################################################
 
+check-tag: ; $(info $(M) Checking for untagged commits in $(GIT_TAG)...)
+	@$(SEMVER) get prerel $(GIT_TAG) | grep -vq "^[0-9]*-g[0-9a-f]*$$"
+
 extract-%: ; $(info $(M) Extracting static binary from $(IMAGE):$*...)
 	@docker create --name $(PACKAGE)-$* $(IMAGE):$*
 	@docker cp $(PACKAGE)-$*:/insulatr bin/$(STATIC)
 	@docker rm $(PACKAGE)-$*
 
-tag-%: binary $(IMAGE)-% extract-%; $(info $(M) Tagging as $*)
+tag-%: ; $(info $(M) Tagging as $*)
 	@hub tag --annotate --sign $* --message "Version $*"
 	@hub push origin $*
 
@@ -133,10 +136,12 @@ changelog-%: ; $(info $(M) Creating changelog for $(GIT_TAG) using milestone $*.
 	    hub issue -M $* -s closed -f "[%t](%U)%n" | while read LINE; do echo "- $$LINE"; done; \
 	) > $(GIT_TAG).txt
 
-release-%: static; $(info $(M) Uploading release for $(GIT_TAG)...)
+build-%: binary $(IMAGE)-% extract-% static
+
+release-%: check-tag tag-% build-% release push-%; $(info $(M) Uploading release for $(GIT_TAG)...)
 	@hub release create -F $(GIT_TAG).txt -a bin/$(STATIC) -a bin/$(STATIC).sha256 -a bin/$(STATIC).asc $(GIT_TAG)
 
-release: changelog-$(MILESTONE) release-$(MILESTONE) ; $(info $(M) Releasing version $(GIT_TAG)...)
+release: check-tag changelog-$(MILESTONE) release-$(MILESTONE) ; $(info $(M) Releasing version $(GIT_TAG)...)
 
 push-%: $(SEMVER) ; $(info $(M) Pushing semver tags for image $(IMAGE):$*...)
 	@docker tag $(IMAGE):$* $(IMAGE):$(MAJOR_VERSION).$(MINOR_VERSION)
