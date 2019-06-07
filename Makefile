@@ -24,10 +24,10 @@ M = $(shell printf "\033[34;1m▶\033[0m")
 
 .DEFAULT_GOAL := $(PACKAGE)
 
-.PHONY: clean deps format linter check static check-docker docker test run
+.PHONY: clean deps format linter semver check static check-docker docker test run bump-% build-% release-% tag-% changelog changelog-% release $(IMAGE)-% check-tag extract-% push% latest-%
 
-clean: ; $(info $(M) Cleaning...)
-	@rm bin/*
+clean: clean-docker; $(info $(M) Cleaning...)
+	@find bin/ -type f | xargs -r rm
 
 ##################################################
 # TOOLS
@@ -105,17 +105,28 @@ ssh-%: scp-% ; $(info $(M) Running remotely on $*)
 # PACKAGE
 ##################################################
 
-check-docker:
+check-docker: ; $(info $(M) Checking for Docker...)
 	@docker version >/dev/null
+
+clean-docker: ; $(info $(M) Removing Docker images called $(IMAGE)...)
+	@docker image ls -q $(IMAGE) | uniq | xargs -r docker image rm -f
 
 docker: $(IMAGE)-master
 
 $(IMAGE)-%: check-docker ; $(info $(M) Building container image $(IMAGE):$*...)
-	@docker build --build-arg REF=$* --tag $(IMAGE):$* .
+	@docker image ls $(IMAGE) | grep -q $* || docker build --build-arg REF=$* --tag $(IMAGE):$* .
 
 ##################################################
 # RELEASE
 ##################################################
+
+check-changes: ; $(info $(M) Checking for uncommitted changes...)
+	@if test "$$(git status --short)"; then \
+	    false; \
+	fi
+
+bump-%: ; $(info $(M) Bumping $* for version $(GIT_TAG)...)
+	@$(SEMVER) bump $* $(GIT_TAG)
 
 check-tag: ; $(info $(M) Checking for untagged commits in $(GIT_TAG)...)
 	@$(SEMVER) get prerel $(GIT_TAG) | grep -vq "^[0-9]*-g[0-9a-f]*$$"
@@ -125,9 +136,11 @@ extract-%: ; $(info $(M) Extracting static binary from $(IMAGE):$*...)
 	@docker cp $(PACKAGE)-$*:/insulatr bin/$(STATIC)
 	@docker rm $(PACKAGE)-$*
 
-tag-%: ; $(info $(M) Tagging as $*)
-	@hub tag --annotate --sign $* --message "Version $*"
-	@hub push origin $*
+tag-%: ; $(info $(M) Tagging as $*...)
+	@git tag | grep -q "$(GIT_TAG)" || git tag --annotate --sign $* --message "Version $*"
+	@git push origin $*
+
+changelog: changelog-$(MILESTONE)
 
 changelog-%: ; $(info $(M) Creating changelog for $(GIT_TAG) using milestone $*...)
 	@( \
@@ -136,14 +149,16 @@ changelog-%: ; $(info $(M) Creating changelog for $(GIT_TAG) using milestone $*.
 	    hub issue -M $* -s closed -f "[%t](%U)%n" | while read LINE; do echo "- $$LINE"; done; \
 	) > $(GIT_TAG).txt
 
-build-%: binary $(IMAGE)-% extract-% static
+build-%: static $(IMAGE)-%
+	@echo Done.
 
-release-%: check-tag tag-% build-% release push-%; $(info $(M) Uploading release for $(GIT_TAG)...)
+release-%: check-changes check-tag tag-% build-% push-%; $(info $(M) Uploading release for $(GIT_TAG)...)
 	@hub release create -F $(GIT_TAG).txt -a bin/$(STATIC) -a bin/$(STATIC).sha256 -a bin/$(STATIC).asc $(GIT_TAG)
 
-release: check-tag changelog-$(MILESTONE) release-$(MILESTONE) ; $(info $(M) Releasing version $(GIT_TAG)...)
+release: check-changes check-tag changelog release-$(GIT_TAG) ; $(info $(M) Releasing version $(GIT_TAG)...)
+	@echo Done.
 
-push-%: $(SEMVER) ; $(info $(M) Pushing semver tags for image $(IMAGE):$*...)
+push-%: ; $(info $(M) Pushing semver tags for image $(IMAGE):$*...)
 	@docker tag $(IMAGE):$* $(IMAGE):$(MAJOR_VERSION).$(MINOR_VERSION)
 	@docker tag $(IMAGE):$* $(IMAGE):$(MAJOR_VERSION)
 	@docker push $(IMAGE):$*
