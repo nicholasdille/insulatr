@@ -2,15 +2,11 @@ PACKAGE  = insulatr
 IMAGE    = nicholasdille/$(PACKAGE)
 STATIC   = insulatr-$(shell uname -m)
 SOURCE   = $(shell echo *.go)
-GOPATH   = $(CURDIR)/.gopath
-BIN      = $(GOPATH)/bin
-BASE     = $(GOPATH)/src/$(PACKAGE)
+PWD      = $(shell pwd)
+BIN      = $(PWD)/bin
+GOMOD    = $(PWD)/go.mod
 GO       = go
-GOLINT   = $(BIN)/golint
-DEPTH    = $(BIN)/depth
 GOFMT    = gofmt
-GLIDE    = glide
-SEMVER   = $(BIN)/semver
 BUILDDEF = insulatr.yaml
 
 GIT_COMMIT = $(shell git rev-list -1 HEAD)
@@ -27,45 +23,40 @@ M = $(shell printf "\033[34;1m▶\033[0m")
 .PHONY: clean deps format linter semver check static check-docker docker test run bump-% build-% release-% tag-% changelog changelog-% release $(IMAGE)-% check-tag extract-% push% latest-%
 
 clean: clean-docker; $(info $(M) Cleaning...)
-	@find bin/ -type f | xargs -r rm
+	@rm -rf $(BIN)
 
 ##################################################
 # TOOLS
 ##################################################
 
-$(BASE): ; $(info $(M) Creating link...)
-	@mkdir -p $(dir $@)
-	@ln -sf $(CURDIR) $@
-
-$(GOLINT): $(BASE) ; $(info $(M) Installing linter...)
-	@$(GO) get github.com/golang/lint/golint
-
-$(GLIDE): ; $(info $(M) Installing glide...)
-	@curl https://glide.sh/get | sh
-
-$(DEPTH): $(BASE) ; $(info $(M) Installing depth...)
-	@$(GO) get github.com/KyleBanks/depth/cmd/depth
-
-$(SEMVER): $(BASE); $(info $(M) Installing semver...)
+$(SEMVER): ; $(info $(M) Installing semver...)
 	@curl -sLf https://github.com/fsaintjacques/semver-tool/raw/2.1.0/src/semver > $@
 	@chmod +x $@
 
-semver: $(SEMVER)
+deps: $(GOMOD)
 
-depupdate: $(BASE) $(GLIDE) ; $(info $(M) Updating dependencies...)
-	@$(GLIDE) update
+deppatch: ; $(info $(M) Updating dependencies to the latest patch...)
+	@go get -u=patch
 
-deps: $(BASE) $(GLIDE) ; $(info $(M) Updating dependencies...)
-	@$(GLIDE) install
+depupdate: ; $(info $(M) Updating dependencies to the latest version...)
+	@go get -u
 
-format: $(BASE) ; $(info $(M) Running formatter...)
-	@$(GOFMT) -l -w $(SOURCE)
+depupdate: ; $(info $(M) Updating dependencies to the latest version...)
+	@go mod tidy
 
-lint: $(GOLINT) ; $(info $(M) Running linter...)
-	@$(GOLINT) $(PACKAGE)
+$(GOMOD): ; $(info $(M) Initializing dependencies...)
+	@test -f go.mod || go mod init
 
-deptree: $(DEPTH) ; $(info $(M) Creating dependency tree...)
-	@$(DEPTH) .
+format: ; $(info $(M) Running formatter...)
+	@gofmt -l -w $(SOURCE)
+
+# go get github.com/golang/lint/golint
+lint: ; $(info $(M) Running linter...)
+	@golint $(PACKAGE)
+
+# go get github.com/KyleBanks/depth/cmd/depth
+deptree: ; $(info $(M) Creating dependency tree...)
+	@depth .
 
 ##################################################
 # BUILD
@@ -83,13 +74,13 @@ binary: $(PACKAGE)
 
 $(PACKAGE): bin/$(PACKAGE) bin/$(PACKAGE).sha256 bin/$(PACKAGE).asc
 
-bin/$(PACKAGE): $(BASE) $(SOURCE) ; $(info $(M) Building $(PACKAGE)...)
-	@cd $(BASE) && $(GO) build -ldflags "-s -w -X main.GitCommit=$(GIT_COMMIT) -X main.BuildTime=$(BUILD_TIME) -X main.Version=$(GIT_TAG)" -o $@ $(SOURCE)
+bin/$(PACKAGE): $(SOURCE) ; $(info $(M) Building $(PACKAGE)...)
+	@$(GO) build -ldflags "-s -w -X main.GitCommit=$(GIT_COMMIT) -X main.BuildTime=$(BUILD_TIME) -X main.Version=$(GIT_TAG)" -o $@ $(SOURCE)
 
 static: bin/$(STATIC) bin/$(STATIC).sha256 bin/$(STATIC).asc
 
-bin/$(STATIC): $(BASE) $(SOURCE) ; $(info $(M) Building static $(PACKAGE)...)
-	@cd $(BASE) && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -a -tags netgo -ldflags "-s -w -X main.GitCommit=$(GIT_COMMIT) -X main.BuildTime=$(BUILD_TIME) -X main.Version=$(GIT_TAG)" -o $@ $(SOURCE)
+bin/$(STATIC): $(SOURCE) ; $(info $(M) Building static $(PACKAGE)...)
+	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -a -tags netgo -ldflags "-s -w -X main.GitCommit=$(GIT_COMMIT) -X main.BuildTime=$(BUILD_TIME) -X main.Version=$(GIT_TAG)" -o $@ $(SOURCE)
 
 ##################################################
 # TEST
