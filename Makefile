@@ -1,18 +1,20 @@
+OWNER    = nicholasdille
 PACKAGE  = insulatr
-IMAGE    = nicholasdille/$(PACKAGE)
+IMAGE    = $(OWNER)/$(PACKAGE)
 STATIC   = insulatr-$(shell uname -m)
 SOURCE   = $(shell echo *.go)
 PWD      = $(shell pwd)
 BIN      = $(PWD)/bin
+TOOLS    = $(PWD)/tools
 GOMOD    = $(PWD)/go.mod
-GO       = go
 GOFMT    = gofmt
+SEMVER   = $(TOOLS)/semver
 BUILDDEF = insulatr.yaml
 
 GIT_COMMIT = $(shell git rev-list -1 HEAD)
 BUILD_TIME = $(shell date +%Y%m%d-%H%M%S)
 GIT_TAG = $(shell git describe --tags 2>/dev/null)
-MILESTONE = $(shell curl -s https://api.github.com/repos/nicholasdille/insulatr/milestones?state=all | jq ".[] | select(.title == \"Version $(GIT_TAG)\").number")
+MILESTONE = $(shell curl -s https://api.github.com/repos/$(IMAGE)/milestones?state=all | jq ".[] | select(.title == \"Version $(GIT_TAG)\").number")
 MAJOR_VERSION = $(shell $(SEMVER) get major $(GIT_TAG))
 MINOR_VERSION = $(shell $(SEMVER) get minor $(GIT_TAG))
 
@@ -20,18 +22,23 @@ M = $(shell printf "\033[34;1m▶\033[0m")
 
 .DEFAULT_GOAL := $(PACKAGE)
 
-.PHONY: clean deps format linter semver check static check-docker docker test run bump-% build-% release-% tag-% changelog changelog-% release $(IMAGE)-% check-tag extract-% push% latest-%
+.PHONY: clean deps deppatch depupdate deptidy format linter check static check-docker docker test run check-changes bump-% build-% release-% tag-% changelog changelog-% release $(IMAGE)-% check-tag extract-% push-% latest-%
+
+.SECONDARY: .docker/**.image
 
 clean: clean-docker; $(info $(M) Cleaning...)
 	@rm -rf $(BIN)
+	@rm -rf $(TOOLS)
+
+$(BIN): ; $(info $(M) Preparing tools...)
+	@mkdir -p $(BIN)
+
+$(TOOLS): ; $(info $(M) Preparing tools...)
+	@mkdir -p $(TOOLS)
 
 ##################################################
 # TOOLS
 ##################################################
-
-$(SEMVER): ; $(info $(M) Installing semver...)
-	@curl -sLf https://github.com/fsaintjacques/semver-tool/raw/2.1.0/src/semver > $@
-	@chmod +x $@
 
 deps: $(GOMOD)
 
@@ -41,7 +48,7 @@ deppatch: ; $(info $(M) Updating dependencies to the latest patch...)
 depupdate: ; $(info $(M) Updating dependencies to the latest version...)
 	@go get -u
 
-depupdate: ; $(info $(M) Updating dependencies to the latest version...)
+deptidy: ; $(info $(M) Updating dependencies to the latest version...)
 	@go mod tidy
 
 $(GOMOD): ; $(info $(M) Initializing dependencies...)
@@ -58,6 +65,12 @@ lint: ; $(info $(M) Running linter...)
 deptree: ; $(info $(M) Creating dependency tree...)
 	@depth .
 
+semver: $(SEMVER)
+
+$(SEMVER): $(TOOLS) ; $(info $(M) Installing semver...)
+	@curl -sLf https://github.com/fsaintjacques/semver-tool/raw/2.1.0/src/semver > $@
+	@chmod +x $@
+
 ##################################################
 # BUILD
 ##################################################
@@ -72,15 +85,15 @@ check: format lint
 
 binary: $(PACKAGE)
 
-$(PACKAGE): bin/$(PACKAGE) bin/$(PACKAGE).sha256 bin/$(PACKAGE).asc
+$(PACKAGE): $(BIN)/$(PACKAGE) $(BIN)/$(PACKAGE).sha256 $(BIN)/$(PACKAGE).asc
 
-bin/$(PACKAGE): $(SOURCE) ; $(info $(M) Building $(PACKAGE)...)
-	@$(GO) build -ldflags "-s -w -X main.GitCommit=$(GIT_COMMIT) -X main.BuildTime=$(BUILD_TIME) -X main.Version=$(GIT_TAG)" -o $@ $(SOURCE)
+$(BIN)/$(PACKAGE): $(BIN) $(SOURCE) ; $(info $(M) Building $(PACKAGE)...)
+	@go build -ldflags "-s -w -X main.GitCommit=$(GIT_COMMIT) -X main.BuildTime=$(BUILD_TIME) -X main.Version=$(GIT_TAG)" -o $@ $(SOURCE)
 
-static: bin/$(STATIC) bin/$(STATIC).sha256 bin/$(STATIC).asc
+static: $(BIN)/$(STATIC) $(BIN)/$(STATIC).sha256 $(BIN)/$(STATIC).asc
 
-bin/$(STATIC): $(SOURCE) ; $(info $(M) Building static $(PACKAGE)...)
-	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -a -tags netgo -ldflags "-s -w -X main.GitCommit=$(GIT_COMMIT) -X main.BuildTime=$(BUILD_TIME) -X main.Version=$(GIT_TAG)" -o $@ $(SOURCE)
+$(BIN)/$(STATIC): $(BIN) $(SOURCE) ; $(info $(M) Building static $(PACKAGE)...)
+	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -tags netgo -ldflags "-s -w -X main.GitCommit=$(GIT_COMMIT) -X main.BuildTime=$(BUILD_TIME) -X main.Version=$(GIT_TAG)" -o $@ $(SOURCE)
 
 ##################################################
 # TEST
@@ -101,28 +114,33 @@ check-docker: ; $(info $(M) Checking for Docker...)
 
 clean-docker: ; $(info $(M) Removing Docker images called $(IMAGE)...)
 	@docker image ls -q $(IMAGE) | uniq | xargs -r docker image rm -f
+	@rm -rf $(PWD)/.docker
+
+.docker/$(IMAGE)/%.image: ; $(info $(M) Building container image $(IMAGE):$*...)
+	@docker build --tag $(IMAGE):$* .
+	@mkdir -p .docker/$(IMAGE)
+	@touch .docker/$(IMAGE)/$*
+
+$(IMAGE)-%: check-docker static .docker/$(IMAGE)/%.image $(SEMVER) ; $(info $(M) Tagging container image $(IMAGE):$*...)
+	@if test "$*" != "master"; then \
+		docker tag $(IMAGE):$* $(IMAGE):$(MAJOR_VERSION).$(MINOR_VERSION); \
+		docker tag $(IMAGE):$* $(IMAGE):$(MAJOR_VERSION); \
+	fi
 
 docker: $(IMAGE)-master
-
-$(IMAGE)-%: check-docker static ; $(info $(M) Building container image $(IMAGE):$*...)
-	@docker image ls $(IMAGE) | grep -q $* || docker build --tag $(IMAGE):$* .
-	@docker tag $(IMAGE):$* $(IMAGE):$(MAJOR_VERSION).$(MINOR_VERSION)
-	@docker tag $(IMAGE):$* $(IMAGE):$(MAJOR_VERSION)
 
 ##################################################
 # RELEASE
 ##################################################
 
 check-changes: ; $(info $(M) Checking for uncommitted changes...)
-	@if test "$$(git status --short)"; then \
-	    false; \
-	fi
+	@test "$$(git status --short)" && false
 
 bump-%: ; $(info $(M) Bumping $* for version $(GIT_TAG)...)
-	@$(SEMVER) bump $* $(GIT_TAG)
+	@semver bump $* $(GIT_TAG)
 
 check-tag: ; $(info $(M) Checking for untagged commits in $(GIT_TAG)...)
-	@$(SEMVER) get prerel $(GIT_TAG) | grep -vq "^[0-9]*-g[0-9a-f]*$$"
+	@semver get prerel $(GIT_TAG) | grep -vq "^[0-9]*-g[0-9a-f]*$$"
 
 extract-%: ; $(info $(M) Extracting static binary from $(IMAGE):$*...)
 	@docker create --name $(PACKAGE)-$* $(IMAGE):$*
@@ -146,7 +164,6 @@ release-%: check-changes check-tag tag-% $(IMAGE)-% push-%; $(info $(M) Uploadin
 	@hub release create -F $(GIT_TAG).txt -a bin/$(STATIC) -a bin/$(STATIC).sha256 -a bin/$(STATIC).asc $(GIT_TAG)
 
 release: check-changes check-tag changelog release-$(GIT_TAG) ; $(info $(M) Releasing version $(GIT_TAG)...)
-	@echo Done.
 
 push-%: ; $(info $(M) Pushing semver tags for image $(IMAGE):$*...)
 	@docker push $(IMAGE):$*
