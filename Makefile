@@ -19,7 +19,7 @@ M = $(shell printf "\033[34;1m▶\033[0m")
 
 .DEFAULT_GOAL := $(PACKAGE)
 
-.PHONY: clean prepare deps deppatch depupdate deptidy format linter check static binary check-docker docker test run check-changes $(PACKAGE) bump-% build-% release-% tag-% changelog changelog-% release $(IMAGE)-% check-tag extract-% push-% latest-%
+.PHONY: clean prepare deps deppatch depupdate deptidy format linter check static binary check-docker docker test run check-changes $(PACKAGE) bump-% build-% release-% tag-% changelog changelog-% release $(IMAGE)-% check-tag push-% latest-%
 
 .SECONDARY:
 
@@ -118,7 +118,7 @@ clean-docker: ; $(info $(M) Removing Docker images called $(IMAGE)...)
 	@docker image ls -q $(IMAGE) | uniq | xargs -r docker image rm -f
 	@rm -rf $(PWD)/.docker
 
-$(PWD)/.docker/$(IMAGE)/%.image: ; $(info $(M) Building container image $(IMAGE):$*...)
+$(PWD)/.docker/$(IMAGE)/%.image: | check-docker ; $(info $(M) Building container image $(IMAGE):$*...)
 	@mkdir -p $(PWD)/.docker/$(IMAGE)
 	@if docker image ls $(IMAGE):$* | grep --invert-match --quiet "$(IMAGE):$*"; then \
 		docker build --tag $(IMAGE):$* .; \
@@ -138,20 +138,21 @@ docker: $(IMAGE)-master
 ##################################################
 
 check-changes: ; $(info $(M) Checking for uncommitted changes...)
-	@test "$$(git status --short)" && false
+	@if test "$$(git status --short)"; then \
+		git status --short; \
+		false; \
+	fi
 
 bump-%: ; $(info $(M) Bumping $* for version $(GIT_TAG)...)
-	@semver bump $* $(GIT_TAG)
+	@$(SEMVER) bump $* $(GIT_TAG)
 
 check-tag: ; $(info $(M) Checking for untagged commits in $(GIT_TAG)...)
-	@semver get prerel $(GIT_TAG) | grep -vq "^[0-9]*-g[0-9a-f]*$$"
+	@if ! $(SEMVER) get prerel $(GIT_TAG) | grep -v --quiet "^[0-9]*-g[0-9a-f]*$$"; then \
+		PAGER= git log --oneline -n $$($(SEMVER) get prerel $(GIT_TAG) | cut -d- -f1); \
+		false; \
+	fi
 
-extract-%: ; $(info $(M) Extracting static binary from $(IMAGE):$*...)
-	@docker create --name $(PACKAGE)-$* $(IMAGE):$*
-	@docker cp $(PACKAGE)-$*:/insulatr bin/$(STATIC)
-	@docker rm $(PACKAGE)-$*
-
-tag-%: ; $(info $(M) Tagging as $*...)
+tag-%: | check-changes ; $(info $(M) Tagging as $*...)
 	@git tag | grep -q "$(GIT_TAG)" || git tag --annotate --sign $* --message "Version $*"
 	@git push origin $*
 
@@ -168,7 +169,7 @@ changelog-%: ; $(info $(M) Creating changelog for $(GIT_TAG) using milestone $*.
 release-%: check-changes check-tag tag-% $(IMAGE)-% push-%; $(info $(M) Uploading release for $(GIT_TAG)...)
 	@hub release create -F $(GIT_TAG).txt -a bin/$(STATIC) -a bin/$(STATIC).sha256 -a bin/$(STATIC).asc $(GIT_TAG)
 
-release: check-changes check-tag changelog release-$(GIT_TAG) ; $(info $(M) Releasing version $(GIT_TAG)...)
+release: changelog release-$(GIT_TAG) ; $(info $(M) Releasing version $(GIT_TAG)...)
 
 push-%: ; $(info $(M) Pushing semver tags for image $(IMAGE):$*...)
 	@docker push $(IMAGE):$*
