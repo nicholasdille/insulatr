@@ -21,7 +21,7 @@ M = $(shell printf "\033[34;1m▶\033[0m")
 
 .PHONY: clean prepare deps deppatch depupdate deptidy format linter check static binary check-docker docker test run check-changes $(PACKAGE) bump-% build-% release-% tag-% changelog changelog-% release $(IMAGE)-% check-tag extract-% push-% latest-%
 
-.SECONDARY: $(PWD)/.docker/$(IMAGE)/*.image *.sha256 *.asc
+.SECONDARY:
 
 clean: clean-docker; $(info $(M) Cleaning...)
 	@rm -rf $(BIN)
