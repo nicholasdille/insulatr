@@ -1,11 +1,11 @@
-FROM golang:1.11 AS deps
+FROM golang:1.14 AS deps
 RUN mkdir -p /go/src/github.com/nicholasdille/insulatr
 WORKDIR /go/src/github.com/nicholasdille/insulatr
 COPY go.mod go.sum ./
 ENV GO111MODULE=on
 RUN go mod download
 
-FROM golang:1.11 AS builder
+FROM golang:1.14 AS builder
 COPY --from=deps /go/pkg /go/pkg
 RUN mkdir -p /go/src/github.com/nicholasdille/insulatr
 WORKDIR /go/src/github.com/nicholasdille/insulatr
