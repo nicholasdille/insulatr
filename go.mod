@@ -8,7 +8,7 @@ require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/Masterminds/semver v1.4.2 // indirect
 	github.com/Masterminds/vcs v1.13.0 // indirect
-	github.com/Microsoft/go-winio v0.0.0-20190408173621-84b4ab48a507
+	github.com/Microsoft/go-winio v0.4.14
 	github.com/Microsoft/hcsshim v0.0.0-20190502002024-8941106abedb
 	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/beorn7/perks v1.0.1
@@ -65,7 +65,7 @@ require (
 	github.com/prometheus/common v0.3.0
 	github.com/prometheus/procfs v0.0.0-20190425082905-87a4384529e0
 	github.com/sdboyer/constext v0.0.0-20170321163424-836a14457353 // indirect
-	github.com/sirupsen/logrus v1.2.0
+	github.com/sirupsen/logrus v1.4.1
 	github.com/spf13/cobra v0.0.4
 	github.com/spf13/pflag v1.0.3
 	github.com/syndtr/gocapability v0.0.0-20180916011248-d98352740cb2
