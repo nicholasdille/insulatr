@@ -210,6 +210,8 @@ github.com/mitchellh/mapstructure v1.1.2 h1:fmNYVwqnSfB9mZU6OS2O6GsXM+wcskZDuKQz
 github.com/mitchellh/mapstructure v1.1.2/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
 github.com/mkideal/cli v0.0.3 h1:Y1OXyfTVI9eQ9RTiXq12h7q88y22Q9ZU4VI09ifz6lE=
 github.com/mkideal/cli v0.0.3/go.mod h1:HLuSls75T7LFlTgByGeuLwcvdUmmx/aUQxnnEKxoZzY=
+github.com/mkideal/cli v0.0.5 h1:mDI9cfeqa+F8cccafj8EwB40dqgqTEjsovnAm0Fl+sc=
+github.com/mkideal/cli v0.0.5/go.mod h1:HLuSls75T7LFlTgByGeuLwcvdUmmx/aUQxnnEKxoZzY=
 github.com/mkideal/pkg v0.0.0-20170503154153-3e188c9e7ecc h1:eyN9UWVX+CeeCQZPudCUAPc84xQYTjEu9MWNa2HuJrs=
 github.com/mkideal/pkg v0.0.0-20170503154153-3e188c9e7ecc/go.mod h1:DECgB56amjU/mmmsKuooNPQ1856HASOMC3D4ntSVU70=
 github.com/moby/term v0.0.0-20200507201656-73f35e472e8f h1:FQQ9Wo/j3IZrVSv8RkGZoeYMuec0xAoSNijF1UqEgB4=
