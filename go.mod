@@ -11,7 +11,7 @@ require (
 	github.com/Microsoft/go-winio v0.0.0-20190408173621-84b4ab48a507
 	github.com/Microsoft/hcsshim v0.0.0-20190502002024-8941106abedb
 	github.com/armon/go-radix v1.0.0 // indirect
-	github.com/beorn7/perks v1.0.0
+	github.com/beorn7/perks v1.0.1
 	github.com/boltdb/bolt v1.3.1 // indirect
 	github.com/containerd/containerd v1.3.4
 	github.com/containerd/continuity v0.0.0-20190426062206-aaeac12a7ffc
