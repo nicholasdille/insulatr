@@ -16,7 +16,7 @@ require (
 	github.com/containerd/continuity v0.0.0-20200413184840-d3ef23f19fbb // indirect
 	github.com/docker/cli v0.0.0-20200528202755-82de74a5e3a7
 	github.com/docker/distribution v0.0.0-20190305004208-6d62eb1d4a35 // indirect
-	github.com/docker/docker v0.0.0-20190410091032-c2cb72e0858a
+	github.com/docker/docker v0.12.0
 	github.com/docker/docker-credential-helpers v0.6.3 // indirect
 	github.com/docker/go v0.0.0-20160303222718-d30aec9fd63c // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
