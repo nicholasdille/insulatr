@@ -35,7 +35,7 @@ require (
 	github.com/golang/protobuf v1.3.3
 	github.com/google/gofuzz v0.0.0-20170612174753-24818f796faf
 	github.com/googleapis/gnostic v0.4.1
-	github.com/gorilla/mux v1.7.1
+	github.com/gorilla/mux v1.7.4
 	github.com/hashicorp/go-version v0.0.0-20190424083514-192140e6f3e6
 	github.com/imdario/mergo v0.3.9
 	github.com/inconshreveable/mousetrap v1.0.0
