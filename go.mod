@@ -1,5 +1,7 @@
 module github.com/nicholasdille/insulatr
 
+go 1.14
+
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78
 	github.com/Bowery/prompt v0.0.0-20190419144237-972d0ceb96f5
@@ -9,7 +11,7 @@ require (
 	github.com/Microsoft/go-winio v0.0.0-20190408173621-84b4ab48a507
 	github.com/Microsoft/hcsshim v0.0.0-20190502002024-8941106abedb
 	github.com/armon/go-radix v1.0.0 // indirect
-	github.com/beorn7/perks v1.0.0
+	github.com/beorn7/perks v1.0.1
 	github.com/boltdb/bolt v1.3.1 // indirect
 	github.com/containerd/containerd v0.0.0-20190430192526-a17c80957164
 	github.com/containerd/continuity v0.0.0-20190426062206-aaeac12a7ffc
