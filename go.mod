@@ -76,7 +76,7 @@ require (
 	golang.org/x/sync v0.0.0-20190227155943-e225da77a7e6
 	golang.org/x/sys v0.0.0-20190405154228-4b34438f7a67
 	golang.org/x/text v0.3.1-0.20181227161524-e6919f6577db
-	golang.org/x/time v0.0.0-20161028155119-f51c12702a4d
+	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1
 	google.golang.org/appengine v1.5.0
 	google.golang.org/genproto v0.0.0-20190404172233-64821d5d2107
 	google.golang.org/grpc v1.19.0
