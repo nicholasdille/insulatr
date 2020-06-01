@@ -28,7 +28,7 @@ require (
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c
 	github.com/docker/go-metrics v0.0.0-20181218153428-b84716841b82
-	github.com/docker/go-units v0.0.0-20181030082039-2fb04c6466a5
+	github.com/docker/go-units v0.4.0
 	github.com/gogo/googleapis v1.2.0
 	github.com/gogo/protobuf v1.2.1
 	github.com/golang/dep v0.5.4 // indirect
