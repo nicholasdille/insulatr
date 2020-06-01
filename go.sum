@@ -84,6 +84,8 @@ github.com/docker/go v0.0.0-20160303222718-d30aec9fd63c h1:Ggg7IiOtghyZzn3ozi31k
 github.com/docker/go v0.0.0-20160303222718-d30aec9fd63c/go.mod h1:CADgU4DSXK5QUlFslkQu2yW2TKzFZcXq/leZfM0UH5Q=
 github.com/docker/go-connections v0.0.0-20180821093606-97c2040d34df h1:ADMjlaDGEn0OOQIieyxanhAt41jcngf8rf78X2eKNLw=
 github.com/docker/go-connections v0.0.0-20180821093606-97c2040d34df/go.mod h1:Gbd7IOopHjR8Iph03tsViu4nIes5XhDvyHbTtUxmeec=
+github.com/docker/go-connections v0.4.0 h1:El9xVISelRB7BuFusrZozjnkIM5YnzCViNKohAFqRJQ=
+github.com/docker/go-connections v0.4.0/go.mod h1:Gbd7IOopHjR8Iph03tsViu4nIes5XhDvyHbTtUxmeec=
 github.com/docker/go-events v0.0.0-20170721190031-9461782956ad h1:VXIse57M5C6ezDuCPyq6QmMvEJ2xclYKZ35SfkXdm3E=
 github.com/docker/go-events v0.0.0-20170721190031-9461782956ad/go.mod h1:Uw6UezgYA44ePAFQYUehOuCzmy5zmg/+nl2ZfMWGkpA=
 github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c h1:+pKlWGMw7gf6bQ+oDZB4KHQFypsfjYlq/C4rfL7D3g8=
