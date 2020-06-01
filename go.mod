@@ -14,7 +14,7 @@ require (
 	github.com/beorn7/perks v1.0.1
 	github.com/boltdb/bolt v1.3.1 // indirect
 	github.com/containerd/containerd v1.3.4
-	github.com/containerd/continuity v0.0.0-20190426062206-aaeac12a7ffc
+	github.com/containerd/continuity v0.0.0-20200413184840-d3ef23f19fbb
 	github.com/containerd/fifo v0.0.0-20200410184934-f15a3290365b
 	github.com/containerd/ttrpc v0.0.0-20190411181408-699c4e40d1e7
 	github.com/containerd/typeurl v0.0.0-20190228175220-2a93cfde8c20
@@ -54,7 +54,7 @@ require (
 	github.com/morikuni/aec v0.0.0-20170113033406-39771216ff4c
 	github.com/nightlyone/lockfile v0.0.0-20180618180623-0ad87eef1443 // indirect
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
-	github.com/opencontainers/go-digest v0.0.0-20190228220655-ac19fd6e7483
+	github.com/opencontainers/go-digest v1.0.0-rc1
 	github.com/opencontainers/image-spec v0.0.0-20190321123305-da296dcb1e47
 	github.com/opencontainers/runc v0.0.0-20190425234816-dae70e8efea4
 	github.com/opencontainers/runtime-spec v0.0.0-20190408193819-a1b50f621a48
