@@ -32,7 +32,7 @@ require (
 	github.com/gogo/googleapis v1.2.0
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/dep v0.5.4 // indirect
-	github.com/golang/protobuf v1.3.3
+	github.com/golang/protobuf v1.4.2
 	github.com/google/gofuzz v0.0.0-20170612174753-24818f796faf
 	github.com/googleapis/gnostic v0.4.1
 	github.com/gorilla/mux v1.7.4
