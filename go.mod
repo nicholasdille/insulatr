@@ -27,20 +27,20 @@ require (
 	github.com/docker/go v0.0.0-20160303222718-d30aec9fd63c
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c
-	github.com/docker/go-metrics v0.0.0-20181218153428-b84716841b82
+	github.com/docker/go-metrics v0.0.1
 	github.com/docker/go-units v0.4.0
 	github.com/gogo/googleapis v1.2.0
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/dep v0.5.4 // indirect
 	github.com/golang/protobuf v1.4.2
-	github.com/google/gofuzz v0.0.0-20170612174753-24818f796faf
+	github.com/google/gofuzz v1.0.0
 	github.com/googleapis/gnostic v0.4.1
 	github.com/gorilla/mux v1.7.4
 	github.com/hashicorp/go-version v0.0.0-20190424083514-192140e6f3e6
 	github.com/imdario/mergo v0.3.9
 	github.com/inconshreveable/mousetrap v1.0.0
 	github.com/jmank88/nuts v0.3.0 // indirect
-	github.com/json-iterator/go v0.0.0-20180701071628-ab8a2e0c74be
+	github.com/json-iterator/go v1.1.7
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2
 	github.com/labstack/gommon v0.0.0-20190125185610-82ef680aef51
 	github.com/mattn/go-colorable v0.1.1
@@ -60,10 +60,10 @@ require (
 	github.com/opencontainers/runc v0.0.0-20190425234816-dae70e8efea4
 	github.com/opencontainers/runtime-spec v0.1.2-0.20190507144316-5b71a03e2700
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v0.9.1
+	github.com/prometheus/client_golang v1.1.0
+	github.com/prometheus/common v0.6.0
+	github.com/prometheus/procfs v0.0.3
 	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4
-	github.com/prometheus/common v0.3.0
-	github.com/prometheus/procfs v0.0.0-20190425082905-87a4384529e0
 	github.com/sdboyer/constext v0.0.0-20170321163424-836a14457353 // indirect
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.4
