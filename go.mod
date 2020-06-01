@@ -61,7 +61,7 @@ require (
 	github.com/opencontainers/runtime-spec v0.0.0-20190408193819-a1b50f621a48
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v0.9.1
-	github.com/prometheus/client_model v0.0.0-20190129233127-fd36f4220a90
+	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4
 	github.com/prometheus/common v0.3.0
 	github.com/prometheus/procfs v0.0.0-20190425082905-87a4384529e0
 	github.com/sdboyer/constext v0.0.0-20170321163424-836a14457353 // indirect
@@ -78,9 +78,9 @@ require (
 	golang.org/x/sys v0.0.0-20200523222454-059865788121
 	golang.org/x/text v0.3.2
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1
-	google.golang.org/appengine v1.6.6
-	google.golang.org/genproto v0.0.0-20190404172233-64821d5d2107
-	google.golang.org/grpc v1.19.0
+	google.golang.org/appengine v1.5.0
+	google.golang.org/genproto v0.0.0-20200601130524-0f60399e6634
+	google.golang.org/grpc v1.27.0
 	gopkg.in/inf.v0 v0.9.0
 	gopkg.in/yaml.v2 v2.2.2
 	k8s.io/api v0.0.0-20190425012535-181e1f9c52c1
