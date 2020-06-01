@@ -1,14 +1,15 @@
-FROM golang:1.14 AS deps
-RUN mkdir -p /go/src/github.com/nicholasdille/insulatr
-WORKDIR /go/src/github.com/nicholasdille/insulatr
+FROM golang:1.14-alpine AS builder
+ARG GO_PACKAGE
+ARG GO_OUTPUT
+RUN test -n ${GO_PACKAGE} && test -n ${GO_OUTPUT}
+RUN apk add --update-cache --no-cache \
+        make \
+        git \
+        curl
+RUN mkdir -p /go/src/${GO_PACKAGE}
+WORKDIR /go/src/${GO_PACKAGE}
 COPY go.mod go.sum ./
-ENV GO111MODULE=on
 RUN go mod download
-
-FROM golang:1.14 AS builder
-COPY --from=deps /go/pkg /go/pkg
-RUN mkdir -p /go/src/github.com/nicholasdille/insulatr
-WORKDIR /go/src/github.com/nicholasdille/insulatr
 COPY . .
 ENV GO111MODULE=on
 RUN COMMIT=$(git rev-list -1 HEAD) \
