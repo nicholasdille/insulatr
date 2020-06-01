@@ -1,8 +1,10 @@
 module github.com/nicholasdille/insulatr
 
+go 1.14
+
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78
-	github.com/Bowery/prompt v0.0.0-20190419144237-972d0ceb96f5
+	github.com/Bowery/prompt v0.0.0-20190916142128-fa8279994f75
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/Masterminds/semver v1.4.2 // indirect
 	github.com/Masterminds/vcs v1.13.0 // indirect
