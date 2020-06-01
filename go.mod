@@ -1,5 +1,7 @@
 module github.com/nicholasdille/insulatr
 
+go 1.14
+
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78
 	github.com/Bowery/prompt v0.0.0-20190419144237-972d0ceb96f5
@@ -18,7 +20,7 @@ require (
 	github.com/containerd/typeurl v0.0.0-20190228175220-2a93cfde8c20
 	github.com/davecgh/go-spew v1.1.1
 	github.com/docker/cli v0.0.0-20190429053159-3273c2e23546
-	github.com/docker/compose-on-kubernetes v0.4.22
+	github.com/docker/compose-on-kubernetes v0.4.24
 	github.com/docker/distribution v0.0.0-20190305004208-6d62eb1d4a35
 	github.com/docker/docker v0.0.0-20190410091032-c2cb72e0858a
 	github.com/docker/docker-credential-helpers v0.0.0-20190430074322-063cca0a6dba
