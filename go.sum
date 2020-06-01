@@ -59,6 +59,8 @@ github.com/docker/docker v0.0.0-20190410091032-c2cb72e0858a h1:1DOpM+JCjYtDBgKQx
 github.com/docker/docker v0.0.0-20190410091032-c2cb72e0858a/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
 github.com/docker/docker-credential-helpers v0.0.0-20190430074322-063cca0a6dba h1:rj3YUPv5wLZpYUCGA6hX63FdA9e8AZETUPUkWCrwZ9I=
 github.com/docker/docker-credential-helpers v0.0.0-20190430074322-063cca0a6dba/go.mod h1:WRaJzqw3CTB9bk10avuGsjVBZsD05qeibJ1/TYlvc0Y=
+github.com/docker/docker-credential-helpers v0.6.3 h1:zI2p9+1NQYdnG6sMU26EX4aVGlqbInSQxQXLvzJ4RPQ=
+github.com/docker/docker-credential-helpers v0.6.3/go.mod h1:WRaJzqw3CTB9bk10avuGsjVBZsD05qeibJ1/TYlvc0Y=
 github.com/docker/go v0.0.0-20160303222718-d30aec9fd63c h1:Ggg7IiOtghyZzn3ozi31kPHpV6qSjMgmesXaWCijYNM=
 github.com/docker/go v0.0.0-20160303222718-d30aec9fd63c/go.mod h1:CADgU4DSXK5QUlFslkQu2yW2TKzFZcXq/leZfM0UH5Q=
 github.com/docker/go-connections v0.0.0-20180821093606-97c2040d34df h1:ADMjlaDGEn0OOQIieyxanhAt41jcngf8rf78X2eKNLw=
