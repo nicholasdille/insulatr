@@ -1,5 +1,7 @@
 module github.com/nicholasdille/insulatr
 
+go 1.14
+
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78
 	github.com/Bowery/prompt v0.0.0-20190419144237-972d0ceb96f5
@@ -24,7 +26,7 @@ require (
 	github.com/docker/docker-credential-helpers v0.0.0-20190430074322-063cca0a6dba
 	github.com/docker/go v0.0.0-20160303222718-d30aec9fd63c
 	github.com/docker/go-connections v0.0.0-20180821093606-97c2040d34df
-	github.com/docker/go-events v0.0.0-20170721190031-9461782956ad
+	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c
 	github.com/docker/go-metrics v0.0.0-20181218153428-b84716841b82
 	github.com/docker/go-units v0.0.0-20181030082039-2fb04c6466a5
 	github.com/gogo/googleapis v1.2.0
