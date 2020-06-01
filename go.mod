@@ -23,7 +23,7 @@ require (
 	github.com/docker/compose-on-kubernetes v0.4.24
 	github.com/docker/distribution v0.0.0-20190305004208-6d62eb1d4a35
 	github.com/docker/docker v0.0.0-20190410091032-c2cb72e0858a
-	github.com/docker/docker-credential-helpers v0.0.0-20190430074322-063cca0a6dba
+	github.com/docker/docker-credential-helpers v0.6.3
 	github.com/docker/go v0.0.0-20160303222718-d30aec9fd63c
 	github.com/docker/go-connections v0.0.0-20180821093606-97c2040d34df
 	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c
