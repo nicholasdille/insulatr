@@ -87,7 +87,7 @@ require (
 	k8s.io/apimachinery v0.0.0-20190425132440-17f84483f500
 	k8s.io/client-go v0.0.0-20190501104856-ef81ee0960bf
 	k8s.io/klog v0.3.0
-	k8s.io/utils v0.0.0-20190221042446-c2654d5206da
+	k8s.io/utils v0.0.0-20200601170155-a0dff01d8ea5
 	sigs.k8s.io/yaml v1.1.0
 	vbom.ml/util v0.0.0-20180919145318-efcd4e0f9787
 )
