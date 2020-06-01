@@ -69,9 +69,9 @@ require (
 	github.com/spf13/pflag v1.0.3
 	github.com/syndtr/gocapability v0.0.0-20180916011248-d98352740cb2
 	github.com/theupdateframework/notary v0.0.0-20190314000213-8ff3ca06ec48
-	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
+	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37
 	golang.org/x/lint v0.0.0-20190313153728-d0100b6bd8b3 // indirect
-	golang.org/x/net v0.0.0-20190311183353-d8887717615a
+	golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sync v0.0.0-20190227155943-e225da77a7e6
 	golang.org/x/sys v0.0.0-20191210023423-ac6580df4449
