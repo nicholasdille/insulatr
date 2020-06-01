@@ -79,8 +79,8 @@ require (
 	golang.org/x/text v0.3.2
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1
 	google.golang.org/appengine v1.5.0
+	google.golang.org/grpc v1.29.1
 	google.golang.org/genproto v0.0.0-20200601130524-0f60399e6634
-	google.golang.org/grpc v1.27.0
 	gopkg.in/inf.v0 v0.9.0
 	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.0.0-20190425012535-181e1f9c52c1
