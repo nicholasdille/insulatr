@@ -19,7 +19,7 @@ require (
 	github.com/containerd/ttrpc v0.0.0-20190411181408-699c4e40d1e7
 	github.com/containerd/typeurl v0.0.0-20190228175220-2a93cfde8c20
 	github.com/davecgh/go-spew v1.1.1
-	github.com/docker/cli v0.0.0-20190429053159-3273c2e23546
+	github.com/docker/cli v0.0.0-20200528202755-82de74a5e3a7
 	github.com/docker/compose-on-kubernetes v0.4.24
 	github.com/docker/distribution v0.0.0-20190305004208-6d62eb1d4a35
 	github.com/docker/docker v0.0.0-20190410091032-c2cb72e0858a
@@ -49,6 +49,7 @@ require (
 	github.com/miekg/pkcs11 v0.0.0-20190429190417-a667d056470f
 	github.com/mkideal/cli v0.0.3
 	github.com/mkideal/pkg v0.0.0-20170503154153-3e188c9e7ecc
+	github.com/moby/term v0.0.0-20200507201656-73f35e472e8f // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 	github.com/modern-go/reflect2 v1.0.1
 	github.com/morikuni/aec v0.0.0-20170113033406-39771216ff4c
@@ -58,7 +59,7 @@ require (
 	github.com/opencontainers/image-spec v0.0.0-20190321123305-da296dcb1e47
 	github.com/opencontainers/runc v0.0.0-20190425234816-dae70e8efea4
 	github.com/opencontainers/runtime-spec v0.0.0-20190408193819-a1b50f621a48
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v0.9.1
 	github.com/prometheus/client_model v0.0.0-20190129233127-fd36f4220a90
 	github.com/prometheus/common v0.3.0
@@ -74,7 +75,7 @@ require (
 	golang.org/x/net v0.0.0-20190311183353-d8887717615a
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sync v0.0.0-20190227155943-e225da77a7e6
-	golang.org/x/sys v0.0.0-20191210023423-ac6580df4449
+	golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd
 	golang.org/x/text v0.3.1-0.20181227161524-e6919f6577db
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1
 	google.golang.org/appengine v1.5.0
