@@ -15,7 +15,7 @@ require (
 	github.com/boltdb/bolt v1.3.1 // indirect
 	github.com/containerd/containerd v1.3.4
 	github.com/containerd/continuity v0.0.0-20190426062206-aaeac12a7ffc
-	github.com/containerd/fifo v0.0.0-20190226154929-a9fb20d87448
+	github.com/containerd/fifo v0.0.0-20200410184934-f15a3290365b
 	github.com/containerd/ttrpc v0.0.0-20190411181408-699c4e40d1e7
 	github.com/containerd/typeurl v0.0.0-20190228175220-2a93cfde8c20
 	github.com/davecgh/go-spew v1.1.1
@@ -58,7 +58,7 @@ require (
 	github.com/opencontainers/image-spec v0.0.0-20190321123305-da296dcb1e47
 	github.com/opencontainers/runc v0.0.0-20190425234816-dae70e8efea4
 	github.com/opencontainers/runtime-spec v0.0.0-20190408193819-a1b50f621a48
-	github.com/pkg/errors v0.8.0
+	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.9.1
 	github.com/prometheus/client_model v0.0.0-20190129233127-fd36f4220a90
 	github.com/prometheus/common v0.3.0
@@ -74,7 +74,7 @@ require (
 	golang.org/x/net v0.0.0-20190311183353-d8887717615a
 	golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a
 	golang.org/x/sync v0.0.0-20190227155943-e225da77a7e6
-	golang.org/x/sys v0.0.0-20190405154228-4b34438f7a67
+	golang.org/x/sys v0.0.0-20191210023423-ac6580df4449
 	golang.org/x/text v0.3.1-0.20181227161524-e6919f6577db
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1
 	google.golang.org/appengine v1.5.0
