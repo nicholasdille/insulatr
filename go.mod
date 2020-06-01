@@ -13,7 +13,7 @@ require (
 	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/beorn7/perks v1.0.0
 	github.com/boltdb/bolt v1.3.1 // indirect
-	github.com/containerd/containerd v0.0.0-20190430192526-a17c80957164
+	github.com/containerd/containerd v1.3.4
 	github.com/containerd/continuity v0.0.0-20190426062206-aaeac12a7ffc
 	github.com/containerd/fifo v0.0.0-20190226154929-a9fb20d87448
 	github.com/containerd/ttrpc v0.0.0-20190411181408-699c4e40d1e7
