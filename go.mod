@@ -37,7 +37,7 @@ require (
 	github.com/googleapis/gnostic v0.4.1
 	github.com/gorilla/mux v1.7.1
 	github.com/hashicorp/go-version v0.0.0-20190424083514-192140e6f3e6
-	github.com/imdario/mergo v0.3.5
+	github.com/imdario/mergo v0.3.9
 	github.com/inconshreveable/mousetrap v1.0.0
 	github.com/jmank88/nuts v0.3.0 // indirect
 	github.com/json-iterator/go v0.0.0-20180701071628-ab8a2e0c74be
