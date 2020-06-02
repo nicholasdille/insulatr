@@ -1,4 +1,5 @@
 name: build
+
 on:
   push:
     branches:
@@ -6,28 +7,31 @@ on:
   pull_request:
     branches:
     - master
+
 jobs:
+
   build:
     name: build
     runs-on: ubuntu-18.04
-    strategy:
-      matrix:
-        golang:
-        #- 1.11
-        #- 1.12
-        #- 1.13
-        - 1.14
     container: golang:1.14
+
     steps:
+
     - name: Checkout code
       uses: actions/checkout@v2
-    - name: Test
+
+    - name: Test golang
       run: go version
+
     - name: Download dependencies
       run: go mod download
+
     - name: Build
       env:
         CGO_ENABLED: 0
         GOOS: linux
         GOARCH: amd64
       run: go build -a -tags netgo -ldflags "-s -w -X main.GitCommit=$GITHUB_SHA -X main.BuildTime=$(date +%Y%m%d-%H%M%S) -X main.Version=XXX" -o bin/insulatr *.go
+
+    - name: Test
+      run: insulatr
