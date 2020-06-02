@@ -10,6 +10,7 @@ import (
 
 type argT struct {
 	cli.Helper
+	Version     	bool   `cli:"version"             usage:"Show version"                                 dft:"false"`
 	File            string `cli:"f,file"              usage:"Build definition file"                        dft:"./insulatr.yaml"`
 	ReuseVolume     bool   `cli:"reuse-volume"        usage:"Use existing volume"                          dft:"false"`
 	RetainVolume    bool   `cli:"retain-volume"       usage:"Retain volume after build"                    dft:"false"`
@@ -44,6 +45,11 @@ func main() {
 
 	os.Exit(cli.Run(new(argT), func(ctx *cli.Context) error {
 		argv := ctx.Argv().(*argT)
+
+		if argv.Version {
+			fmt.Fprintf(os.Stdout, "insulatr version %s built at %s from %s\n", Version, BuildTime, GitCommit)
+			os.Exit(0)
+		}
 
 		_, err := os.Stat(argv.File)
 		if os.IsNotExist(err) {
