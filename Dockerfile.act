@@ -1,0 +1,15 @@
+FROM alpine AS act
+RUN apk add --update-cache --no-cache \
+        curl \
+        jq
+RUN curl -s https://api.github.com/repos/nektos/act/releases/latest \
+    | jq --raw-output '.assets[] | select(.name == "act_Linux_x86_64.tar.gz") | .browser_download_url' \
+    | xargs curl -Lf \
+    | tar -xvzC /usr/local/bin/ act
+
+FROM docker:stable AS final
+COPY --from=act /usr/local/bin/act /usr/local/bin/
+WORKDIR /src
+COPY . .
+RUN act --list
+ENTRYPOINT ["act"]
