@@ -34,4 +34,4 @@ jobs:
       run: go build -a -tags netgo -ldflags "-s -w -X main.GitCommit=$GITHUB_SHA -X main.BuildTime=$(date +%Y%m%d-%H%M%S) -X main.Version=XXX" -o bin/insulatr *.go
 
     - name: Test
-      run: ./bin/insulatr-x86_64
+      run: ./bin/insulatr
