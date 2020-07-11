@@ -22,7 +22,7 @@ require (
 	github.com/cloudflare/cfssl v1.4.1 // indirect
 	github.com/containerd/containerd v1.3.4 // indirect
 	github.com/containerd/continuity v0.0.0-20200413184840-d3ef23f19fbb // indirect
-	github.com/docker/cli v0.0.0-20200227165822-2298e6a3fe24
+	github.com/docker/cli cae16e70b92d
 	github.com/docker/distribution v0.0.0-20190305004208-6d62eb1d4a35 // indirect
 	github.com/docker/docker v1.13.1
 	github.com/docker/docker-credential-helpers v0.6.3 // indirect
