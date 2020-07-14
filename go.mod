@@ -45,7 +45,7 @@ require (
 	github.com/mattn/go-colorable v0.1.1 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/miekg/pkcs11 v0.0.0-20190429190417-a667d056470f // indirect
-	github.com/mkideal/cli v0.0.5
+	github.com/mkideal/cli v0.2.2
 	github.com/mkideal/pkg v0.0.0-20170503154153-3e188c9e7ecc // indirect
 	github.com/moby/term v0.0.0-20200507201656-73f35e472e8f // indirect
 	github.com/morikuni/aec v0.0.0-20170113033406-39771216ff4c // indirect
